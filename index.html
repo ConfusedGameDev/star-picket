@@ -22,7 +22,10 @@
   --disp:"Major Mono Display", "Chakra Petch", ui-monospace, monospace;
   color-scheme:dark;
 }
-html,body{height:100%}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+img{max-width:100%}
 body{
   background:var(--space);color:var(--ink);font-family:var(--hud);
   overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#07060f">
 <title>Star Picket</title>
+<meta property="og:title" content="Star Picket">
+<meta property="og:description" content="A Bosconian-style sector patrol shooter. Clear every station, watch for spy ships, and survive Condition Red.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Major+Mono+Display&display=swap" rel="stylesheet">
@@ -39,32 +41,51 @@ body{
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)}
 .corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);
   right:max(12px, env(safe-area-inset-right,0px));display:flex;gap:8px;z-index:3}
-.corner button{
+.corner button, .ghost{
   font:600 12px/1 var(--hud);letter-spacing:.12em;text-transform:uppercase;
   color:var(--dim);background:rgba(14,11,30,.6);border:1px solid rgba(141,134,184,.35);
   border-radius:6px;padding:8px 10px;cursor:pointer;
 }
-.corner button:focus-visible,.cta:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.ghost{padding:12px 14px;color:var(--ink);font-weight:700}
+button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 50% 40%, rgba(255,93,143,.10), rgba(7,6,15,.78) 60%);
+  background:radial-gradient(ellipse at 50% 40%, rgba(255,93,143,.10), rgba(7,6,15,.80) 60%);
   padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
-  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px)}
-.card{width:min(440px,100%);display:flex;flex-direction:column;gap:18px;text-align:left}
+  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);
+  overflow-y:auto;touch-action:pan-y}
+.card{width:min(460px,100%);display:flex;flex-direction:column;gap:16px;text-align:left;margin:auto 0}
 .kicker{font:600 12px/1 var(--hud);letter-spacing:.3em;color:var(--rose);text-transform:uppercase}
 h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);text-wrap:balance;
   text-shadow:0 0 24px rgba(255,200,97,.35)}
 .lede{margin:0;color:var(--ink);font:500 15px/1.5 var(--hud);max-width:60ch}
-.table{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font:500 13px/1.3 var(--hud);
-  color:var(--dim);border-top:1px solid rgba(141,134,184,.25);padding-top:14px;font-variant-numeric:tabular-nums}
+.table{display:grid;grid-template-columns:1fr auto;gap:5px 16px;font:500 13px/1.3 var(--hud);
+  color:var(--dim);border-top:1px solid rgba(141,134,184,.25);padding-top:12px;font-variant-numeric:tabular-nums}
 .table b{color:var(--ink);font-weight:700;text-align:right}
 .table .gold{color:var(--amber)}
 .result{font:700 44px/1 var(--hud);color:var(--amber);font-variant-numeric:tabular-nums;letter-spacing:.04em}
 .best{font:500 13px/1 var(--hud);color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
-.cta{align-self:flex-start;font:700 16px/1 var(--hud);letter-spacing:.2em;text-transform:uppercase;
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cta{font:700 16px/1 var(--hud);letter-spacing:.2em;text-transform:uppercase;
   color:var(--space);background:var(--amber);border:0;border-radius:4px;padding:16px 26px;cursor:pointer;
   box-shadow:0 0 0 1px rgba(255,200,97,.4), 0 0 28px rgba(255,200,97,.35)}
 .cta:active{transform:translateY(1px)}
+.cta[disabled]{opacity:.5;cursor:default;box-shadow:none}
 .hint{font:500 12px/1.4 var(--hud);color:var(--dim)}
+.field{display:flex;gap:8px;align-items:stretch}
+.field input{flex:1;min-width:0;font:700 18px/1 var(--hud);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink);background:rgba(14,11,30,.8);border:1px solid rgba(141,134,184,.45);border-radius:4px;padding:12px 14px}
+.field input::placeholder{color:rgba(141,134,184,.6);letter-spacing:.14em}
+.lb{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 14px;font:500 14px/1.3 var(--hud);
+  font-variant-numeric:tabular-nums;color:var(--dim);border-top:1px solid rgba(141,134,184,.25);padding-top:12px}
+.lb .h{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--rose)}
+.lb .n{color:var(--ink);font-weight:700;letter-spacing:.08em}
+.lb .s{color:var(--amber);font-weight:700;text-align:right}
+.lb .r{text-align:right}
+.lb .me{color:var(--amber)}
+.lb .me .n{color:var(--amber)}
+.status{font:500 12px/1.4 var(--hud);color:var(--dim);min-height:1.4em}
+.status.err{color:var(--rose)}
+#shareImg{display:block;width:100%;max-width:360px;border:1px solid rgba(141,134,184,.35);border-radius:6px}
 @media (prefers-reduced-motion: reduce){ h1{text-shadow:none} }
 </style>
 </head>
@@ -82,25 +103,59 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
   <div class="card" id="cardTitle">
     <div class="kicker">Sector patrol · arcade</div>
     <h1>star picket</h1>
-    <p class="lede">Press anywhere and drag to steer. Your guns fire fore and aft on their own. Clear every hex station in the sector to advance: knock out all six cannon pods, or thread a shot into the core.</p>
+    <p class="lede">Press anywhere and drag to steer. Your guns fire fore and aft on their own. Clear every hex station in the sector to advance. Shoot the yellow spy ship before it gets away, or the whole sector goes to Condition Red.</p>
     <div class="table">
       <span>Station core</span><b class="gold">1500</b>
-      <span>Cannon pod</span><b>100</b>
-      <span>Interceptor</span><b>50</b>
-      <span>Proximity mine</span><b>20</b>
-      <span>Asteroid · missile</span><b>10</b>
-      <span>Extra ship</span><b>every 20000</b>
+      <span>Cannon pod</span><b>200</b>
+      <span>Squadron: I · P · E type</span><b>50 · 60 · 70</b>
+      <span>Squadron leader</span><b>100 · 120 · 140</b>
+      <span>Whole squadron</span><b class="gold">500 · 1000 · 1500</b>
+      <span>Spy ship</span><b>200 → 400 → 800</b>
+      <span>Mine · asteroid</span><b>20 · 10</b>
+      <span>Extra ship</span><b>20000, then every 70000</b>
     </div>
-    <button class="cta" id="btnStart" type="button">Launch</button>
+    <div class="row">
+      <button class="cta" id="btnStart" type="button">Launch</button>
+      <button class="ghost" id="btnBoard" type="button">Top pilots</button>
+    </div>
     <div class="hint">Keyboard: arrows or WASD to steer, P to pause.</div>
   </div>
+
   <div class="card" id="cardOver" hidden>
     <div class="kicker">Patrol lost</div>
     <div class="result" id="finalScore">0</div>
     <div class="best" id="finalBest">Best 0</div>
     <div class="best" id="finalRound">Reached round 1</div>
-    <button class="cta" id="btnAgain" type="button">Fly again</button>
+    <form class="field" id="formName">
+      <input id="pilotName" maxlength="10" placeholder="CALLSIGN" autocomplete="nickname" aria-label="Pilot name" inputmode="latin">
+      <button class="cta" id="btnSubmit" type="submit">Post</button>
+    </form>
+    <div class="status" id="postStatus"></div>
+    <div class="lb" id="lbOver"></div>
+    <div class="row">
+      <button class="cta" id="btnAgain" type="button">Fly again</button>
+      <button class="ghost" id="btnShare" type="button">Share score</button>
+    </div>
   </div>
+
+  <div class="card" id="cardShare" hidden>
+    <div class="kicker">Share your patrol</div>
+    <img id="shareImg" alt="Star Picket score card">
+    <div class="status" id="shareStatus"></div>
+    <div class="row">
+      <button class="cta" id="btnShareNow" type="button">Share image</button>
+      <button class="ghost" id="btnCopyLink" type="button">Copy link</button>
+      <button class="ghost" id="btnShareBack" type="button">Back</button>
+    </div>
+  </div>
+
+  <div class="card" id="cardBoard" hidden>
+    <div class="kicker">Top pilots</div>
+    <div class="status" id="boardStatus"></div>
+    <div class="lb" id="lbTitle"></div>
+    <button class="ghost" id="btnBoardBack" type="button">Back</button>
+  </div>
+
   <div class="card" id="cardPause" hidden>
     <div class="kicker">Holding position</div>
     <h1>paused</h1>
@@ -111,14 +166,22 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
 <script>
 (() => {
 "use strict";
-const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
-const probe = document.getElementById('probe');
-const overlay = document.getElementById('overlay');
-const cards = { title: cardTitle, over: cardOver, pause: cardPause };
+const $ = id => document.getElementById(id);
+const cv = $('game'), ctx = cv.getContext('2d'), probe = $('probe'), overlay = $('overlay');
+const cards = { title:$('cardTitle'), over:$('cardOver'), share:$('cardShare'), board:$('cardBoard'), pause:$('cardPause') };
+const SITE = 'https://star-picket.vercel.app';
 
-const C = { space:'#07060f', ink:'#ece8ff', dim:'#8d86b8', amber:'#ffc861', rose:'#ff5d8f', cyan:'#62e3ff', mine:'#ff7a3d' };
+const C = { space:'#07060f', ink:'#ece8ff', dim:'#8d86b8', amber:'#ffc861', rose:'#ff5d8f', cyan:'#62e3ff', mine:'#ff7a3d',
+            green:'#8be0b4', spy:'#fff04a', itype:'#ff8ad0', ptype:'#62e3ff', etype:'#ff5d5d' };
 const HUDF = '"Chakra Petch", ui-monospace, Menlo, Consolas, monospace';
+
+// Squadron types, after the original's I / P / E ships.
+const TYPES = {
+  I: { name:'I-TYPE', col:C.itype, pts:50,  lead:100, bonus:500,  sp:150, turn:1.5 },
+  P: { name:'P-TYPE', col:C.ptype, pts:60,  lead:120, bonus:1000, sp:185, turn:2.4 },
+  E: { name:'E-TYPE', col:C.etype, pts:70,  lead:140, bonus:1500, sp:330, turn:0.35 },
+};
+const SLOTS = [[-30,-26],[-30,26],[-60,-52],[-60,52]]; // V behind the leader, in the leader's frame
 
 let W = 0, H = 0, DPR = 1, inset = { t:0, r:0, b:0, l:0 };
 function resize(){
@@ -135,15 +198,17 @@ const WS = 3600, TAU = Math.PI * 2;
 const wd = d => { d = ((d % WS) + WS) % WS; return d > WS/2 ? d - WS : d; };
 const wrap = v => ((v % WS) + WS) % WS;
 const rnd = (a,b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random()*a.length)];
 const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
 const dist = (ax,ay,bx,by) => Math.hypot(wd(ax-bx), wd(ay-by));
 const angDiff = (a,b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
 const angTo = (ax,ay,bx,by) => Math.atan2(wd(by-ay), wd(bx-ax));
 const easeOutBack = u => { const c = 1.9; return 1 + (c+1)*Math.pow(u-1,3) + c*Math.pow(u-1,2); };
+const fmt = n => Number(n).toLocaleString('en-US');
 
 // ---------- storage ----------
-let best = 0, muted = false;
-try { best = +localStorage.getItem('sp-best') || 0; muted = localStorage.getItem('sp-mute') === '1'; } catch(e){}
+let best = 0, muted = false, savedName = '';
+try { best = +localStorage.getItem('sp-best') || 0; muted = localStorage.getItem('sp-mute') === '1'; savedName = localStorage.getItem('sp-name') || ''; } catch(e){}
 const save = (k,v) => { try { localStorage.setItem(k, v); } catch(e){} };
 
 // ---------- audio ----------
@@ -156,9 +221,9 @@ function initAudio(){
     const d = noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
   } catch(e){ ac = null; }
 }
-function tone(f0,f1,dur,type,vol){
+function tone(f0,f1,dur,type,vol,delay){
   if (!ac || muted) return;
-  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  const t = ac.currentTime + (delay||0), o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1), t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
@@ -177,8 +242,21 @@ function sfx(k){
   else if (k==='mine'){ noise(0.6,0.35,2200); tone(300,60,0.4,'triangle',0.15); }
   else if (k==='tick'){ const n = performance.now(); if (n - lastTick < 35) return; lastTick = n; tone(1500,2100,0.045,'sine',0.05); }
   else if (k==='die'){ tone(520,50,1.0,'sawtooth',0.14); noise(0.9,0.35,1000); }
-  else if (k==='life'){ tone(660,660,0.1,'square',0.06); setTimeout(()=>tone(990,990,0.18,'square',0.06),110); }
+  else if (k==='life'){ tone(660,660,0.1,'square',0.06); tone(990,990,0.18,'square',0.06,0.11); }
   else if (k==='missile') tone(300,700,0.12,'triangle',0.04);
+  else if (k==='alert'){ tone(880,880,0.12,'square',0.05); tone(880,880,0.12,'square',0.05,0.18); }
+  else if (k==='siren'){ tone(520,780,0.35,'sawtooth',0.035); tone(780,520,0.35,'sawtooth',0.035,0.35); }
+  else if (k==='spy'){ tone(1200,1600,0.08,'square',0.04); tone(1200,1600,0.08,'square',0.04,0.12); tone(1200,1600,0.08,'square',0.04,0.24); }
+  else if (k==='bonus'){ [0,0.08,0.16,0.24].forEach((d,i) => tone(600+i*160, 600+i*160, 0.1, 'square', 0.06, d)); }
+}
+// Digitised-voice stand-in: the original announced every alert out loud.
+let voiceOK = 'speechSynthesis' in window;
+function say(text){
+  if (muted || !voiceOK) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text); u.rate = 0.95; u.pitch = 0.55; u.volume = 0.9; u.lang = 'en-US';
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch(e){ voiceOK = false; }
 }
 
 // ---------- starfield ----------
@@ -193,7 +271,7 @@ const layers = [0.18, 0.42, 0.75].map((f,i) => {
     x.fillStyle = hue + [0.35,0.55,0.85][i] * rnd(0.5,1) + ')';
     x.fillRect(Math.random()*TILE, Math.random()*TILE, s, s);
   }
-  if (i===0){ // faint nebula wash
+  if (i===0){
     for (let k=0;k<5;k++){
       const gx = rnd(0,TILE), gy = rnd(0,TILE), r = rnd(160,320);
       const gr = x.createRadialGradient(gx,gy,0,gx,gy,r);
@@ -211,11 +289,13 @@ const keys = new Set();
 
 function newGame(){
   g = {
-    score:0, disp:0, lives:3, round:0, nextLife:20000,
+    score:0, disp:0, lives:3, round:0, nextLife:20000, lifeStep:70000,
     p:{ x:WS/2, y:WS/2, a:-Math.PI/2, v:200, inv:2, alive:true },
     cam:{ x:WS/2, y:WS/2 },
     bullets:[], miss:[], stations:[], fighters:[], rocks:[], parts:[], pops:[], rings:[],
-    fireT:0, spawnT:3, shake:0, stop:0, deadT:0, clearT:0, banner:null, bump:0, over:false,
+    squads:[], spy:null, spyT:0, spyStreak:0,
+    cond:0, condMin:0, roundT:0, sirenT:0, redFlash:0,
+    fireT:0, spawnT:3, squadT:0, shake:0, stop:0, deadT:0, clearT:0, banner:null, bump:0, over:false,
   };
   nextRound();
 }
@@ -224,14 +304,15 @@ function farFrom(list,x,y,d){ return list.every(o => dist(o.x,o.y,x,y) > d); }
 
 function nextRound(){
   g.round++;
-  g.stations = []; g.rocks = []; g.fighters = []; g.miss = [];
+  g.stations = []; g.rocks = []; g.fighters = []; g.miss = []; g.squads = []; g.spy = null;
+  g.cond = 0; g.condMin = 0; g.roundT = 0; g.spyT = rnd(14, 22); g.squadT = rnd(9, 14); g.spawnT = 4;
   const p = g.p, n = Math.min(3 + g.round, 10);
   let tries = 0;
   while (g.stations.length < n && tries++ < 2000){
     const x = rnd(0,WS), y = rnd(0,WS);
     if (dist(x,y,p.x,p.y) < 650 || !farFrom(g.stations,x,y,720)) continue;
     const pods = []; for (let k=0;k<6;k++) pods.push({ hp:2, alive:true, flash:0 });
-    g.stations.push({ x, y, rot: rnd(0,TAU), pods, core:{ hp:3, flash:0 }, alive:true, fireT:rnd(1,3), ph:rnd(0,TAU) });
+    g.stations.push({ x, y, rot: rnd(0,TAU), pods, core:{ hp:3, flash:0 }, alive:true, fireT:rnd(1,3), ph:rnd(0,TAU), alerted:0 });
   }
   const avoid = g.stations.concat([{x:p.x,y:p.y}]);
   tries = 0;
@@ -245,11 +326,41 @@ function nextRound(){
     for (let k=0;k<vn;k++) verts.push(r * rnd(0.72,1.08));
     g.rocks.push({ x, y, r, mine, verts, spin:rnd(-0.6,0.6), a:rnd(0,TAU), vx:rnd(-8,8), vy:rnd(-8,8), ph:rnd(0,TAU) });
   }
-  g.banner = { text: 'ROUND ' + g.round, sub: n + ' stations in sector', t: 2.6 };
-  g.spawnT = 3;
+  banner('ROUND ' + g.round, n + ' stations in sector', 2.6);
+  if (g.round === 1) say('Blast off'); else say('Alert, alert');
 }
 
+function banner(text, sub, t){ g.banner = { text, sub: sub || '', t: t || 2 }; }
 function podPos(s,k){ const a = s.rot + k * Math.PI/3; return { x: s.x + Math.cos(a)*46, y: s.y + Math.sin(a)*46 }; }
+
+// ---------- conditions ----------
+const COND = ['GREEN','YELLOW','RED'];
+function setCond(c, why){
+  if (c <= g.cond) return;
+  g.cond = c;
+  if (c === 2){
+    g.condMin = 2; g.redFlash = 1; g.sirenT = 0;
+    banner('CONDITION RED', why || 'All fighters converge on you', 3);
+    say('Condition red'); sfx('alert');
+    // the base commits what it has: a squadron right away and singles pour in
+    g.squadT = Math.min(g.squadT, 1.5); g.spawnT = Math.min(g.spawnT, 0.5);
+  } else if (c === 1 && why){ banner('CONDITION YELLOW', why, 1.6); }
+}
+function updateCond(dt){
+  g.roundT += dt;
+  const yellowAt = 30, redAt = Math.max(50, 85 - g.round * 2.5);
+  if (g.roundT > redAt && g.cond < 2) setCond(2, 'You stayed too long');
+  else if (g.roundT > yellowAt && g.condMin < 1){ g.condMin = 1; setCond(1, 'The sector knows you are here'); }
+  if (g.cond === 2) return;
+  // yellow is situational: a base that has noticed you, or ships on your tail
+  const p = g.p;
+  let threat = g.condMin;
+  for (const s of g.stations) if (s.alive && s.alerted > 0) threat = Math.max(threat, 1);
+  if (threat < 1){ for (const f of g.fighters) if (dist(f.x,f.y,p.x,p.y) < 520){ threat = 1; break; } }
+  if (threat < 1 && g.squads.length) threat = 1;
+  if (threat < 1 && g.spy) threat = 1;
+  g.cond = threat;
+}
 
 // ---------- effects ----------
 function burst(x,y,n,col,spd,life,size){
@@ -262,7 +373,7 @@ function burst(x,y,n,col,spd,life,size){
 function ring(x,y,r,col,dur){ g.rings.push({ x, y, r, col, t:0, dur: dur || 0.45 }); }
 function addPop(x,y,v,o){
   o = o || {};
-  g.pops.push({ x, y, v, t:0, ph:0, delay:o.delay||0, big:!!o.big, col:o.col||C.amber, sx:0, sy:0, jx:rnd(-6,6) });
+  g.pops.push({ x, y, v, t:0, ph:0, delay:o.delay||0, big:!!o.big, col:o.col||C.amber, sx:0, sy:0, jx:rnd(-6,6), label:o.label||'' });
 }
 
 // ---------- destruction ----------
@@ -274,8 +385,7 @@ function destroyStation(s, hx, hy){
     if (!pod.alive) return;
     pod.alive = false;
     const pp = podPos(s,k);
-    addPop(pp.x, pp.y, 100, { delay:d, col:'#ffb3cb' }); d += 0.07;
-    burst(pp.x, pp.y, 14, C.rose, 220, 0.7);
+    burst(pp.x, pp.y, 14, C.rose, 220, 0.7); d += 0.07;
   });
   addPop(s.x, s.y, 1500, { big:true, col:C.amber });
   burst(s.x, s.y, 90, C.amber, 420, 1.2, 3);
@@ -285,31 +395,46 @@ function destroyStation(s, hx, hy){
   g.shake = Math.max(g.shake, 16); g.stop = 0.14;
   sfx('big');
   if (g.stations.every(t => !t.alive) && !g.clearT){
-    g.clearT = 3; g.banner = { text:'SECTOR CLEAR', sub:'Next round incoming', t:3 };
+    g.clearT = 3; banner('SECTOR CLEAR', 'Next round incoming', 3);
   }
 }
 function hitPod(s,k,bx,by){
   const pod = s.pods[k];
-  pod.hp--; pod.flash = 0.08; sfx('hit');
+  pod.hp--; pod.flash = 0.08; sfx('hit'); s.alerted = 6;
   burst(bx, by, 4, '#ffffff', 160, 0.25, 1.5);
   if (pod.hp > 0) return;
   pod.alive = false;
   const pp = podPos(s,k);
-  addPop(bx, by, 100, { col:'#ffb3cb' });
+  addPop(bx, by, 200, { col:'#ffb3cb' });
   burst(pp.x, pp.y, 22, C.rose, 260, 0.7); ring(pp.x, pp.y, 50, C.rose, 0.3);
   g.shake = Math.max(g.shake, 5); sfx('boom');
   if (s.pods.every(p => !p.alive)) destroyStation(s, s.x, s.y);
 }
 function hitCore(s,bx,by){
-  s.core.hp--; s.core.flash = 0.1; sfx('hit');
+  s.core.hp--; s.core.flash = 0.1; sfx('hit'); s.alerted = 6;
   burst(bx, by, 8, C.amber, 200, 0.3);
   if (s.core.hp <= 0) destroyStation(s, bx, by);
 }
-function killFighter(f, x, y){
+function killFighter(f, x, y, silent){
   if (f.dead) return; f.dead = true;
-  addPop(x, y, 50, { col:'#bff3ff' });
-  burst(f.x, f.y, 18, C.cyan, 240, 0.6); burst(f.x, f.y, 6, '#ffffff', 300, 0.3);
-  g.shake = Math.max(g.shake, 4); sfx('boom');
+  const T = f.type ? TYPES[f.type] : null;
+  const col = T ? T.col : C.cyan;
+  if (!silent){
+    const v = f.leader ? T.lead : (T ? T.pts : 50);
+    addPop(x, y, v, { col: f.leader ? '#ffffff' : (T ? T.col : '#bff3ff') });
+  }
+  burst(f.x, f.y, f.leader ? 30 : 18, col, 240, 0.6); burst(f.x, f.y, 6, '#ffffff', 300, 0.3);
+  if (f.leader) ring(f.x, f.y, 60, '#ffffff', 0.35);
+  g.shake = Math.max(g.shake, f.leader ? 7 : 4); sfx('boom');
+  if (f.squad) onSquadLoss(f.squad, f, x, y);
+}
+function killSpy(x, y){
+  const s = g.spy; if (!s) return;
+  const v = [200, 400, 800][Math.min(2, g.spyStreak)]; g.spyStreak++;
+  addPop(x, y, v, { col: C.spy, big: v >= 800 });
+  burst(s.x, s.y, 40, C.spy, 300, 0.8); burst(s.x, s.y, 12, '#ffffff', 380, 0.4);
+  ring(s.x, s.y, 90, C.spy, 0.4); g.shake = Math.max(g.shake, 8); sfx('boom'); sfx('bonus');
+  g.spy = null; g.spyT = rnd(18, 30);
 }
 function killRock(r, x, y){
   if (r.dead) return; r.dead = true;
@@ -320,6 +445,7 @@ function killRock(r, x, y){
     for (const f of g.fighters) if (!f.dead && dist(f.x,f.y,r.x,r.y) < 115) killFighter(f, f.x, f.y);
     for (const m of g.miss) if (!m.dead && dist(m.x,m.y,r.x,r.y) < 115){ m.dead = true; addPop(m.x,m.y,10,{col:'#ffb3cb'}); }
     for (const o of g.rocks) if (!o.dead && o !== r && dist(o.x,o.y,r.x,r.y) < 115) killRock(o, o.x, o.y);
+    if (g.spy && dist(g.spy.x,g.spy.y,r.x,r.y) < 115) killSpy(g.spy.x, g.spy.y);
     if (g.p.alive && dist(g.p.x,g.p.y,r.x,r.y) < 80) killPlayer();
   } else {
     addPop(x, y, 10, { col:'#d8d2ff' });
@@ -335,6 +461,115 @@ function killPlayer(){
   g.shake = 22; g.stop = 0.18; sfx('die');
 }
 
+// ---------- squadrons ----------
+function launchSquad(){
+  const p = g.p;
+  const bases = g.stations.filter(s => s.alive);
+  if (!bases.length) return;
+  // the nearest base that is not right on top of you sends the squadron
+  bases.sort((a,b) => dist(a.x,a.y,p.x,p.y) - dist(b.x,b.y,p.x,p.y));
+  const base = bases.find(b => dist(b.x,b.y,p.x,p.y) > 300) || bases[0];
+  const pool = g.round <= 1 ? ['I'] : g.round === 2 ? ['I','I','P'] : g.round <= 4 ? ['I','P','P','E'] : ['I','P','E','E'];
+  const type = pick(pool), T = TYPES[type];
+  const a = angTo(base.x, base.y, p.x, p.y);
+  const sq = { type, members:[], leader:null, lost:0, done:false, t:0 };
+  const mk = (ox, oy, leader) => {
+    const f = { x:wrap(base.x + Math.cos(a)*ox - Math.sin(a)*oy), y:wrap(base.y + Math.sin(a)*ox + Math.cos(a)*oy),
+                a, sp: T.sp + g.round*6 + (g.cond === 2 ? 25 : 0), wob:rnd(0,TAU), type, leader, squad:sq, slot:null, state:'form', dead:false };
+    g.fighters.push(f); sq.members.push(f); return f;
+  };
+  sq.leader = mk(0, 0, true);
+  SLOTS.forEach(s => { const f = mk(s[0], s[1], false); f.slot = s; });
+  g.squads.push(sq);
+  banner('BATTLE STATIONS', T.name + ' squadron inbound', 2.2);
+  say('Battle stations'); sfx('alert');
+  base.alerted = 8;
+}
+function onSquadLoss(sq, f, x, y){
+  sq.lost++;
+  if (f.leader){
+    // the formation breaks: wingmen peel off and run for the edge of the sector
+    for (const m of sq.members){
+      if (m.dead || m === f) continue;
+      m.state = 'flee'; m.a = angTo(g.p.x, g.p.y, m.x, m.y) + rnd(-0.6, 0.6); m.sp *= 1.35;
+    }
+    if (sq.members.some(m => !m.dead)) banner('FORMATION BROKEN', 'Wingmen are running', 1.4);
+  }
+  if (sq.members.every(m => m.dead)){
+    sq.done = true;
+    const T = TYPES[sq.type];
+    addPop(x, y, T.bonus, { big:true, col:'#ffffff', delay:0.25, label:'SQUADRON' });
+    ring(x, y, 140, T.col, 0.5); sfx('bonus');
+    g.shake = Math.max(g.shake, 10);
+  }
+}
+function steerFighter(f, dt){
+  const p = g.p, T = f.type ? TYPES[f.type] : null;
+  if (f.state === 'flee'){
+    f.a += clamp(angDiff(f.a, angTo(p.x,p.y,f.x,f.y)), -1.2*dt, 1.2*dt);
+    f.x = wrap(f.x + Math.cos(f.a)*f.sp*dt); f.y = wrap(f.y + Math.sin(f.a)*f.sp*dt);
+    if (dist(f.x,f.y,p.x,p.y) > 1100) f.dead = true;
+    return;
+  }
+  if (f.squad && !f.leader && f.squad.leader && !f.squad.leader.dead){
+    // wingman: hold the slot behind the leader
+    const L = f.squad.leader, ca = Math.cos(L.a), sa = Math.sin(L.a);
+    const tx = L.x + ca*f.slot[0] - sa*f.slot[1], ty = L.y + sa*f.slot[0] + ca*f.slot[1];
+    const dx = wd(tx - f.x), dy = wd(ty - f.y), d = Math.hypot(dx, dy);
+    const sp = Math.min(f.sp * 1.4, d * 6);
+    if (d > 0.5){ f.x = wrap(f.x + dx/d*sp*dt); f.y = wrap(f.y + dy/d*sp*dt); }
+    f.a = L.a;
+    return;
+  }
+  let target, turn = f.type ? T.turn : 2.3;
+  if (!p.alive) target = f.a + 0.4;
+  else if (f.type === 'P'){
+    // boomerang: come in from the flank, never straight down your gun line
+    const rel = angDiff(p.a, angTo(p.x,p.y,f.x,f.y));
+    const side = rel >= 0 ? 1 : -1;
+    const fx = p.x + Math.cos(p.a + side*Math.PI/2)*150, fy = p.y + Math.sin(p.a + side*Math.PI/2)*150;
+    target = dist(f.x,f.y,p.x,p.y) < 170 ? angTo(f.x,f.y,p.x,p.y) : angTo(f.x,f.y,fx,fy);
+  } else if (f.type === 'E'){
+    target = angTo(f.x,f.y,p.x,p.y); // barely turns: it is a dart fired at where you are
+  } else {
+    target = angTo(f.x,f.y,p.x,p.y) + Math.sin(time*2 + f.wob)*0.35;
+  }
+  f.a += clamp(angDiff(f.a, target), -turn*dt, turn*dt);
+  f.x = wrap(f.x + Math.cos(f.a)*f.sp*dt); f.y = wrap(f.y + Math.sin(f.a)*f.sp*dt);
+}
+
+// ---------- spy ship ----------
+function spawnSpy(){
+  const p = g.p, a = rnd(0,TAU), r = 520;
+  g.spy = { x:wrap(p.x + Math.cos(a)*r), y:wrap(p.y + Math.sin(a)*r), a: a + Math.PI + rnd(-0.6,0.6), sp: 225 + g.round*8,
+            passes: 0, maxPasses: 2, far: 0, wob: rnd(0,TAU), orbit: Math.random() < 0.5 ? 1 : -1 };
+  banner('SPY SHIP SIGHTED', 'Shoot it before it reports in', 2.2);
+  say('Spy ship sighted'); sfx('spy');
+}
+function updateSpy(dt){
+  const s = g.spy, p = g.p;
+  if (!s) return;
+  const d = dist(s.x,s.y,p.x,p.y);
+  // glide past at a distance, then swing round for another look
+  const want = d > 300 ? angTo(s.x,s.y,p.x,p.y) + s.orbit*0.55 : angTo(s.x,s.y,p.x,p.y) + s.orbit*1.35;
+  s.a += clamp(angDiff(s.a, want + Math.sin(time*3 + s.wob)*0.2), -1.6*dt, 1.6*dt);
+  s.x = wrap(s.x + Math.cos(s.a)*s.sp*dt); s.y = wrap(s.y + Math.sin(s.a)*s.sp*dt);
+  if (d > 560){
+    s.far += dt;
+    if (s.far > 1.2){
+      s.far = 0; s.passes++;
+      if (s.passes > s.maxPasses){
+        // it got away with your position
+        g.spy = null; g.spyT = rnd(20, 32); g.spyStreak = 0;
+        setCond(2, 'The spy ship reported your position');
+        return;
+      }
+      s.a = angTo(s.x,s.y,p.x,p.y); s.orbit = -s.orbit;
+    }
+  } else s.far = 0;
+  if (p.alive && p.inv <= 0 && d < 16) killPlayer();
+}
+
 // ---------- update ----------
 function update(dtReal){
   time += dtReal;
@@ -342,7 +577,6 @@ function update(dtReal){
   if (g.stop > 0){ g.stop -= dtReal; dt *= 0.12; }
   const p = g.p;
 
-  // input vector
   let ix = 0, iy = 0;
   if (keys.has('ArrowLeft')||keys.has('a')) ix--; if (keys.has('ArrowRight')||keys.has('d')) ix++;
   if (keys.has('ArrowUp')||keys.has('w')) iy--;   if (keys.has('ArrowDown')||keys.has('s')) iy++;
@@ -357,7 +591,6 @@ function update(dtReal){
     p.x = wrap(p.x + Math.cos(p.a) * p.v * dt);
     p.y = wrap(p.y + Math.sin(p.a) * p.v * dt);
     if (p.inv > 0) p.inv -= dt;
-    // auto fire, fore and aft
     g.fireT -= dt;
     if (g.fireT <= 0){
       g.fireT = 0.13;
@@ -371,13 +604,12 @@ function update(dtReal){
       if (g.lives > 0){
         p.alive = true; p.inv = 2.5; p.v = 190;
         g.miss.forEach(m => { if (dist(m.x,m.y,p.x,p.y) < 500) m.dead = true; });
-        g.fighters.forEach(f => { if (dist(f.x,f.y,p.x,p.y) < 450) f.dead = true; });
+        g.fighters.forEach(f => { if (dist(f.x,f.y,p.x,p.y) < 450) killFighter(f, f.x, f.y, true); });
         g.rocks.forEach(r => { if (dist(r.x,r.y,p.x,p.y) < 70) r.dead = true; });
       } else endGame();
     }
   }
 
-  // camera with lead
   const lead = p.alive ? 70 : 0;
   const tx = p.x + Math.cos(p.a)*lead, ty = p.y + Math.sin(p.a)*lead;
   const k = Math.min(1, 5*dtReal);
@@ -385,11 +617,16 @@ function update(dtReal){
   g.cam.y = wrap(g.cam.y + wd(ty - g.cam.y)*k);
   g.shake *= Math.exp(-9*dtReal); if (g.shake < 0.2) g.shake = 0;
 
+  if (p.alive && !g.clearT) updateCond(dt);
+  if (g.cond === 2){
+    g.sirenT -= dtReal; if (g.sirenT <= 0){ g.sirenT = 2.4; sfx('siren'); }
+    g.redFlash = Math.max(0, g.redFlash - dtReal*0.5);
+  }
+
   // bullets
   for (const b of g.bullets){
     b.x = wrap(b.x + b.vx*dt); b.y = wrap(b.y + b.vy*dt); b.life -= dt;
     if (b.life <= 0){ b.dead = true; continue; }
-    // stations
     for (const s of g.stations){
       if (!s.alive || dist(b.x,b.y,s.x,s.y) > 80) continue;
       for (let i=0;i<6 && !b.dead;i++){
@@ -401,6 +638,7 @@ function update(dtReal){
       if (b.dead) break;
     }
     if (b.dead) continue;
+    if (g.spy && dist(b.x,b.y,g.spy.x,g.spy.y) < 16){ b.dead = true; killSpy(b.x,b.y); continue; }
     for (const f of g.fighters){ if (!f.dead && dist(b.x,b.y,f.x,f.y) < 15){ b.dead = true; killFighter(f,b.x,b.y); break; } }
     if (b.dead) continue;
     for (const m of g.miss){ if (!m.dead && dist(b.x,b.y,m.x,m.y) < 10){ b.dead = true; m.dead = true; addPop(b.x,b.y,10,{col:'#ffb3cb'}); burst(m.x,m.y,10,C.rose,180,0.4); sfx('hit'); break; } }
@@ -411,10 +649,11 @@ function update(dtReal){
   // stations
   for (const s of g.stations){
     if (!s.alive) continue;
-    s.core.flash -= dt; s.pods.forEach(q => q.flash -= dt);
+    s.core.flash -= dt; s.pods.forEach(q => q.flash -= dt); s.alerted -= dt;
     if (p.alive){
       const d = dist(s.x,s.y,p.x,p.y);
       if (d < 560){
+        s.alerted = Math.max(s.alerted, 2);
         s.fireT -= dt;
         if (s.fireT <= 0){
           s.fireT = Math.max(0.7, 1.7 - g.round*0.08) + rnd(0,0.8);
@@ -443,45 +682,57 @@ function update(dtReal){
     if (p.alive && p.inv <= 0 && dist(m.x,m.y,p.x,p.y) < 13){ m.dead = true; killPlayer(); }
   }
 
-  // fighters
+  // spawning: lone fighters, squadrons, the spy ship
   if (p.alive && !g.clearT){
+    const red = g.cond === 2;
     g.spawnT -= dt;
-    const cap = Math.min(4 + g.round*2, 18);
-    if (g.spawnT <= 0 && g.fighters.length < cap){
-      g.spawnT = Math.max(0.9, 3.4 - g.round*0.25) + rnd(0,1);
+    const cap = red ? 26 : Math.min(3 + g.round, 10);
+    const loose = g.fighters.filter(f => !f.squad).length;
+    if (g.spawnT <= 0 && loose < cap){
+      g.spawnT = red ? rnd(0.5, 1.1) : Math.max(1.4, 4.5 - g.round*0.25) + rnd(0,1.5);
       const a = rnd(0,TAU), r = rnd(620,820);
-      const n = g.round >= 2 && Math.random() < 0.55 ? 3 : 1;
-      const bx = p.x + Math.cos(a)*r, by = p.y + Math.sin(a)*r, fa = a + Math.PI;
-      for (let i=0;i<n;i++){
-        const ox = i===0 ? 0 : (i===1 ? -1 : 1);
-        g.fighters.push({ x:wrap(bx + Math.cos(fa+Math.PI/2)*ox*26 - Math.cos(fa)*Math.abs(ox)*22),
-                          y:wrap(by + Math.sin(fa+Math.PI/2)*ox*26 - Math.sin(fa)*Math.abs(ox)*22),
-                          a:fa, sp: 165 + g.round*9 + rnd(-10,10), wob:rnd(0,TAU) });
-      }
+      g.fighters.push({ x:wrap(p.x + Math.cos(a)*r), y:wrap(p.y + Math.sin(a)*r), a:a+Math.PI, type:'I', leader:false, squad:null,
+                        sp: 150 + g.round*9 + (red ? 35 : 0) + rnd(-10,10), wob:rnd(0,TAU), state:'hunt', dead:false });
     }
+    g.squadT -= dt;
+    if (g.squadT <= 0 && g.squads.filter(s => !s.done).length < (red ? 3 : 1)){
+      g.squadT = red ? rnd(6, 9) : Math.max(9, 20 - g.round) + rnd(0, 6);
+      launchSquad();
+    }
+    if (!g.spy){ g.spyT -= dt; if (g.spyT <= 0) spawnSpy(); }
   }
+  updateSpy(dt);
+
+  // fighters
   for (const f of g.fighters){
     if (f.dead) continue;
-    const target = p.alive ? angTo(f.x,f.y,p.x,p.y) + Math.sin(time*2 + f.wob)*0.35 : f.a + 0.4;
-    f.a += clamp(angDiff(f.a, target), -2.3*dt, 2.3*dt);
-    f.x = wrap(f.x + Math.cos(f.a)*f.sp*dt); f.y = wrap(f.y + Math.sin(f.a)*f.sp*dt);
-    if (p.alive && p.inv <= 0 && dist(f.x,f.y,p.x,p.y) < 18){ killFighter(f,f.x,f.y); killPlayer(); }
-    if (dist(f.x,f.y,p.x,p.y) > 1700) f.dead = true;
-    for (const r of g.rocks){ if (!r.dead && dist(f.x,f.y,r.x,r.y) < r.r + 8){ f.dead = true; burst(f.x,f.y,14,C.cyan,200,0.5); if (r.mine) killRock(r,r.x,r.y); break; } }
+    steerFighter(f, dt);
+    if (f.dead) continue;
+    if (p.alive && p.inv <= 0 && dist(f.x,f.y,p.x,p.y) < 18){ killFighter(f,f.x,f.y,true); killPlayer(); }
+    if (!f.squad && dist(f.x,f.y,p.x,p.y) > 1700) f.dead = true;
+    for (const r of g.rocks){ if (!r.dead && dist(f.x,f.y,r.x,r.y) < r.r + 8){ killFighter(f, f.x, f.y, true); if (r.mine) killRock(r,r.x,r.y); break; } }
+  }
+  for (const sq of g.squads){
+    if (sq.done) continue;
+    sq.t += dt;
+    const alive = sq.members.filter(m => !m.dead);
+    if (!alive.length){ sq.done = true; continue; }
+    // a formation that loses you gives up and is recalled
+    if (sq.leader && !sq.leader.dead && dist(sq.leader.x, sq.leader.y, p.x, p.y) > 1500 && sq.t > 20){
+      alive.forEach(m => { m.dead = true; }); sq.done = true;
+    }
   }
 
   // rocks
   for (const r of g.rocks){
     if (r.dead) continue;
     r.a += r.spin*dt; r.x = wrap(r.x + r.vx*dt); r.y = wrap(r.y + r.vy*dt);
-    if (p.alive && p.inv <= 0 && dist(r.x,r.y,p.x,p.y) < r.r + 9){ if (r.mine) killRock(r,r.x,r.y); else { killRock(r,r.x,r.y); } killPlayer(); }
+    if (p.alive && p.inv <= 0 && dist(r.x,r.y,p.x,p.y) < r.r + 9){ killRock(r,r.x,r.y); killPlayer(); }
   }
 
-  // particles & rings
   for (const q of g.parts){ q.x += q.vx*dt; q.y += q.vy*dt; q.vx *= 0.96; q.vy *= 0.96; q.life -= dt; }
   for (const q of g.rings) q.t += dtReal;
 
-  // score pops (real time so they never stall)
   for (const q of g.pops){
     if (q.delay > 0){ q.delay -= dtReal; continue; }
     q.t += dtReal;
@@ -490,18 +741,16 @@ function update(dtReal){
     else if (q.ph === 1 && q.t >= 0.48){ q.dead = true; bankScore(q.v); }
   }
 
-  // round clear
   if (g.clearT > 0){ g.clearT -= dtReal; if (g.clearT <= 0){ g.clearT = 0; nextRound(); } }
   if (g.banner){ g.banner.t -= dtReal; if (g.banner.t <= 0) g.banner = null; }
 
-  // rolling score
   if (g.disp < g.score) g.disp = Math.min(g.score, g.disp + Math.max(1, Math.ceil((g.score - g.disp) * 9 * dtReal)));
   g.bump *= Math.exp(-8*dtReal);
 
-  // cleanup
   g.bullets = g.bullets.filter(o => !o.dead);
   g.miss = g.miss.filter(o => !o.dead);
   g.fighters = g.fighters.filter(o => !o.dead);
+  g.squads = g.squads.filter(o => !o.done);
   g.rocks = g.rocks.filter(o => !o.dead);
   g.parts = g.parts.filter(o => o.life > 0);
   g.rings = g.rings.filter(o => o.t < o.dur);
@@ -511,7 +760,7 @@ function update(dtReal){
 function bankScore(v){
   g.score += v; g.bump = Math.min(1.4, g.bump + (v >= 1000 ? 1.2 : 0.5)); sfx('tick');
   const t = scoreTarget(); hudSparks.push({ x:t.x, y:t.y, t:0, big: v >= 1000 });
-  while (g.score >= g.nextLife){ g.nextLife += 20000; g.lives++; sfx('life'); g.banner = { text:'EXTRA SHIP', sub:'', t:1.6 }; }
+  while (g.score >= g.nextLife){ g.nextLife += g.lifeStep; g.lives++; sfx('life'); banner('EXTRA SHIP', '', 1.6); }
 }
 const hudSparks = [];
 
@@ -519,10 +768,14 @@ function endGame(){
   for (const q of g.pops) g.score += q.v;
   g.pops = []; g.disp = g.score; g.over = true;
   if (g.score > best){ best = g.score; save('sp-best', best); }
-  finalScore.textContent = g.score.toLocaleString('en-US');
-  finalBest.textContent = 'Best ' + best.toLocaleString('en-US');
-  finalRound.textContent = 'Reached round ' + g.round;
+  $('finalScore').textContent = fmt(g.score);
+  $('finalBest').textContent = 'Best ' + fmt(best);
+  $('finalRound').textContent = 'Reached round ' + g.round;
+  $('pilotName').value = savedName; $('btnSubmit').disabled = false; $('postStatus').textContent = ''; $('postStatus').className = 'status';
+  $('lbOver').innerHTML = '';
+  posted = null;
   showCard('over');
+  loadBoard($('lbOver'), $('postStatus'));
 }
 
 // ---------- render ----------
@@ -531,6 +784,26 @@ function camPos(){ return g ? g.cam : demoCam; }
 function toS(x,y){ const c = camPos(); return { x: wd(x - c.x) + W/2 + shx, y: wd(y - c.y) + H/2 + shy }; }
 const onScreen = (s,m) => s.x > -m && s.x < W + m && s.y > -m && s.y < H + m;
 function scoreTarget(){ const L = Math.max(16, inset.l) + 2, T = Math.max(12, inset.t); return { x: L + 64, y: T + 40 }; }
+
+function drawShip(f){
+  const s = toS(f.x,f.y); if (!onScreen(s,30)) return;
+  const T = f.type ? TYPES[f.type] : null, col = T ? T.col : C.cyan;
+  ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(f.a);
+  ctx.lineWidth = 2; ctx.strokeStyle = f.leader ? '#ffffff' : col;
+  if (f.type === 'P'){ // boomerang
+    ctx.fillStyle = '#0d2a33';
+    ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-4,-12); ctx.lineTo(-10,-8); ctx.lineTo(-1,0); ctx.lineTo(-10,8); ctx.lineTo(-4,12); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (f.type === 'E'){ // thin dart
+    ctx.fillStyle = '#2a0d12';
+    ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-10,-5); ctx.lineTo(-6,0); ctx.lineTo(-10,5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#2a0d26';
+    ctx.beginPath(); ctx.moveTo(13,0); ctx.lineTo(-8,-9); ctx.lineTo(-3,0); ctx.lineTo(-8,9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle = f.leader ? '#ffffff' : col; ctx.fillRect(-1,-1.5,5,3);
+  if (f.leader){ ctx.globalAlpha = 0.5 + 0.5*Math.sin(time*10); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(0,0,19,0,TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+  ctx.restore();
+}
 
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -544,7 +817,6 @@ function render(){
   }
   if (!g) return;
 
-  // rocks
   for (const r of g.rocks){
     const s = toS(r.x, r.y); if (!onScreen(s, 40)) continue;
     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(r.a);
@@ -561,7 +833,6 @@ function render(){
     ctx.restore();
   }
 
-  // stations
   for (const st of g.stations){
     if (!st.alive) continue;
     const s = toS(st.x, st.y); if (!onScreen(s, 90)) continue;
@@ -589,18 +860,15 @@ function render(){
   }
 
   ctx.globalCompositeOperation = 'lighter';
-  // bullets
   ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.lineCap = 'round';
   ctx.beginPath();
   for (const b of g.bullets){ const s = toS(b.x,b.y); if (!onScreen(s,20)) continue; const sp = Math.hypot(b.vx,b.vy); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - b.vx/sp*12, s.y - b.vy/sp*12); }
   ctx.stroke();
-  // particles
   for (const q of g.parts){
     const s = toS(q.x,q.y); if (!onScreen(s,10)) continue;
     ctx.globalAlpha = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.col; ctx.fillRect(s.x - q.s/2, s.y - q.s/2, q.s, q.s);
   }
   ctx.globalAlpha = 1;
-  // rings
   for (const q of g.rings){
     const s = toS(q.x,q.y), u = q.t / q.dur;
     ctx.globalAlpha = (1-u)*0.9; ctx.strokeStyle = q.col; ctx.lineWidth = 3*(1-u)+1;
@@ -609,23 +877,30 @@ function render(){
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
 
-  // missiles
   for (const m of g.miss){
     const s = toS(m.x,m.y); if (!onScreen(s,20)) continue;
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(m.a);
     ctx.fillStyle = C.rose; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(0,-4); ctx.lineTo(-6,0); ctx.lineTo(0,4); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
-  // fighters
-  for (const f of g.fighters){
-    const s = toS(f.x,f.y); if (!onScreen(s,30)) continue;
-    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(f.a);
-    ctx.fillStyle = '#0d2a33'; ctx.strokeStyle = C.cyan; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(13,0); ctx.lineTo(-8,-9); ctx.lineTo(-3,0); ctx.lineTo(-8,9); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.cyan; ctx.fillRect(-1,-1.5,5,3);
-    ctx.restore();
+  for (const f of g.fighters) drawShip(f);
+
+  if (g.spy){
+    const sp = g.spy, s = toS(sp.x,sp.y);
+    if (onScreen(s,40)){
+      ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(sp.a);
+      ctx.globalCompositeOperation = 'lighter';
+      const gl = ctx.createRadialGradient(0,0,2,0,0,26); gl.addColorStop(0,'rgba(255,240,74,0.35)'); gl.addColorStop(1,'rgba(255,240,74,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0,0,26,0,TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#3a3300'; ctx.strokeStyle = C.spy; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0,0,15,7,0,0,TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.spy; ctx.beginPath(); ctx.ellipse(2,0,6,4,0,0,TAU); ctx.fill();
+      ctx.fillStyle = Math.sin(time*14) > 0 ? '#ffffff' : C.spy; ctx.fillRect(-14,-1,3,2); ctx.fillRect(11,-1,3,2);
+      ctx.restore();
+    }
   }
-  // player
+
   const p = g.p;
   if (p.alive && !(p.inv > 0 && Math.floor(p.inv*12) % 2)){
     const s = toS(p.x,p.y);
@@ -638,6 +913,14 @@ function render(){
     ctx.beginPath(); ctx.moveTo(17,0); ctx.lineTo(-9,-11); ctx.lineTo(-5,0); ctx.lineTo(-9,11); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#3b2600'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(0,-3); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
     ctx.restore();
+  }
+
+  // condition red: the screen edge throbs
+  if (g.cond === 2){
+    const a = 0.10 + 0.08*Math.sin(time*5) + 0.25*g.redFlash;
+    const gr = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);
+    gr.addColorStop(0,'rgba(255,40,70,0)'); gr.addColorStop(1,`rgba(255,40,70,${a})`);
+    ctx.fillStyle = gr; ctx.fillRect(0,0,W,H);
   }
 
   drawPops();
@@ -662,12 +945,12 @@ function drawPops(){
       const u = clamp(q.t / 0.2, 0, 1);
       const sc = q.t < 0.2 ? Math.max(0.01, easeOutBack(u)) : 1;
       const rise = (q.big ? 30 : 18) * Math.min(1, q.t / 0.25);
+      if (q.label) popText(q.label, s.x + q.jx*(1-u), s.y - rise - base*0.75*sc, 12, q.col, 1);
       popText(String(q.v), s.x + q.jx*(1-u), s.y - rise, base * sc, q.col, 1);
     } else {
       const u = clamp(q.t / 0.48, 0, 1), e = u*u*u;
       const x = q.sx + (tgt.x - q.sx) * e;
       const y = q.sy + (tgt.y - q.sy) * e - Math.sin(u*Math.PI) * 50;
-      // streak
       ctx.globalCompositeOperation = 'lighter';
       ctx.strokeStyle = q.col; ctx.globalAlpha = 0.35*u; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x + (q.sx - x)*0.12, y + (q.sy - y)*0.12 + 8); ctx.stroke();
@@ -689,7 +972,6 @@ function drawHUD(){
   const L = Math.max(16, inset.l) + 2, T = Math.max(12, inset.t), R = Math.max(12, inset.r);
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   ctx.font = `600 11px ${HUDF}`; ctx.fillStyle = C.dim; ctx.fillText('S C O R E', L, T + 12);
-  // rolling score, leading zeros dimmed
   const str = String(Math.floor(g.disp)).padStart(7, '0');
   const lead = str.match(/^0*/)[0].length;
   const rolling = g.disp < g.score;
@@ -702,7 +984,6 @@ function drawHUD(){
   if (rolling){ ctx.shadowColor = C.amber; ctx.shadowBlur = 14; }
   ctx.fillText(str.slice(lead), lw, 0); ctx.shadowBlur = 0;
   ctx.restore();
-  // hud sparks
   ctx.globalCompositeOperation = 'lighter';
   for (let i = hudSparks.length - 1; i >= 0; i--){
     const s = hudSparks[i]; s.t += 1/60; const u = s.t / 0.35;
@@ -713,43 +994,54 @@ function drawHUD(){
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.font = `600 11px ${HUDF}`; ctx.fillStyle = C.dim;
   ctx.fillText('HI ' + String(Math.max(best, g.score)).padStart(7,'0') + '   RND ' + g.round, L, T + 64);
-  // lives
   for (let i = 0; i < Math.min(g.lives, 6); i++){
     ctx.save(); ctx.translate(L + 8 + i*20, T + 82); ctx.rotate(-Math.PI/2);
     ctx.fillStyle = C.amber; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-5,-6); ctx.lineTo(-3,0); ctx.lineTo(-5,6); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
 
-  // radar (centered on ship, whole sector)
+  // radar: whole sector, centred on you
   const RS = Math.round(clamp(W * 0.26, 92, 132));
   const rx = W - R - RS, ry = T + 44;
   ctx.fillStyle = 'rgba(14,11,30,0.72)'; ctx.fillRect(rx, ry, RS, RS);
-  ctx.strokeStyle = 'rgba(141,134,184,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(rx + 0.5, ry + 0.5, RS - 1, RS - 1);
+  ctx.strokeStyle = g.cond === 2 ? 'rgba(255,93,143,0.6)' : 'rgba(141,134,184,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(rx + 0.5, ry + 0.5, RS - 1, RS - 1);
   ctx.strokeStyle = 'rgba(141,134,184,0.12)'; ctx.beginPath();
   ctx.moveTo(rx + RS/2, ry); ctx.lineTo(rx + RS/2, ry + RS); ctx.moveTo(rx, ry + RS/2); ctx.lineTo(rx + RS, ry + RS/2); ctx.stroke();
   const cx = g.p.x, cy = g.p.y, k = RS / WS;
-  for (const st of g.stations){ if (!st.alive) continue;
-    const x = rx + RS/2 + wd(st.x - cx)*k, y = ry + RS/2 + wd(st.y - cy)*k;
-    ctx.fillStyle = C.rose; ctx.fillRect(x - 3, y - 3, 6, 6); }
-  ctx.fillStyle = C.cyan;
-  for (const f of g.fighters){ const x = rx + RS/2 + wd(f.x - cx)*k, y = ry + RS/2 + wd(f.y - cy)*k; ctx.fillRect(x - 1, y - 1, 2, 2); }
+  const rp = (x,y) => [rx + RS/2 + wd(x - cx)*k, ry + RS/2 + wd(y - cy)*k];
+  for (const st of g.stations){ if (!st.alive) continue; const [x,y] = rp(st.x,st.y); ctx.fillStyle = C.rose; ctx.fillRect(x - 3, y - 3, 6, 6); }
+  for (const f of g.fighters){
+    const [x,y] = rp(f.x,f.y);
+    if (f.leader){ ctx.fillStyle = '#ff2d55'; ctx.fillRect(x - 2.5, y - 2.5, 5, 5); }
+    else { ctx.fillStyle = f.type ? TYPES[f.type].col : C.cyan; ctx.fillRect(x - 1, y - 1, 2, 2); }
+  }
+  if (g.spy && Math.sin(time*12) > 0){ const [x,y] = rp(g.spy.x,g.spy.y); ctx.fillStyle = C.spy; ctx.fillRect(x - 2, y - 2, 4, 4); }
   ctx.fillStyle = '#ffffff'; ctx.fillRect(rx + RS/2 - 2, ry + RS/2 - 2, 4, 4);
-  // condition
-  let near = 0; for (const f of g.fighters) if (dist(f.x,f.y,g.p.x,g.p.y) < 650) near++;
-  for (const m of g.miss) if (dist(m.x,m.y,g.p.x,g.p.y) < 400) near++;
-  const cond = near >= 3 ? 'RED' : near ? 'YELLOW' : 'GREEN';
-  const ccol = near >= 3 ? C.rose : near ? C.amber : '#8be0b4';
+
+  // condition and formation indicator
+  const cond = COND[g.cond];
+  const ccol = g.cond === 2 ? C.rose : g.cond === 1 ? C.amber : C.green;
   ctx.textAlign = 'right'; ctx.font = `700 11px ${HUDF}`;
-  ctx.fillStyle = (cond === 'RED' && Math.sin(time*12) < 0) ? 'rgba(255,93,143,0.35)' : ccol;
+  ctx.fillStyle = (g.cond === 2 && Math.sin(time*12) < 0) ? 'rgba(255,93,143,0.35)' : ccol;
   ctx.fillText('CONDITION ' + cond, W - R, ry + RS + 16);
   ctx.fillStyle = C.dim; ctx.font = `600 11px ${HUDF}`;
   ctx.fillText(g.stations.filter(s => s.alive).length + ' STATIONS LEFT', W - R, ry + RS + 31);
+  const sq = g.squads.find(s => !s.done && s.leader && !s.leader.dead);
+  if (sq){
+    const T = TYPES[sq.type], bx = W - R - 4, by = ry + RS + 48;
+    ctx.fillStyle = C.dim; ctx.fillText('FORMATION', bx - 40, by + 4);
+    ctx.save(); ctx.translate(bx - 14, by); ctx.rotate(-Math.PI/2);
+    const dot = (x,y,c,r) => { ctx.fillStyle = c; ctx.fillRect(x - r, y - r, r*2, r*2); };
+    dot(0, 0, '#ff2d55', 2.5);
+    sq.members.forEach(m => { if (m.leader) return; dot(m.slot[0]*0.2, m.slot[1]*0.2, m.dead ? 'rgba(141,134,184,0.3)' : T.col, 1.8); });
+    ctx.restore();
+  }
 
-  // banner
   if (g.banner){
     const b = g.banner, a = clamp(Math.min(b.t, 0.4) / 0.4, 0, 1);
+    const red = b.text === 'CONDITION RED';
     ctx.textAlign = 'center'; ctx.globalAlpha = a;
-    ctx.font = `700 ${Math.min(44, W*0.1)}px ${HUDF}`; ctx.fillStyle = C.amber; ctx.shadowColor = C.amber; ctx.shadowBlur = 20;
+    ctx.font = `700 ${Math.min(44, W*0.1)}px ${HUDF}`; ctx.fillStyle = red ? C.rose : C.amber; ctx.shadowColor = red ? C.rose : C.amber; ctx.shadowBlur = 20;
     ctx.fillText(b.text, W/2, H*0.36); ctx.shadowBlur = 0;
     if (b.sub){ ctx.font = `600 13px ${HUDF}`; ctx.fillStyle = C.ink; ctx.fillText(b.sub.toUpperCase(), W/2, H*0.36 + 28); }
     ctx.globalAlpha = 1;
@@ -785,7 +1077,7 @@ cv.addEventListener('pointermove', e => {
   if (!stick.active || e.pointerId !== stick.id) return;
   let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy;
   const d = Math.hypot(dx, dy), max = 56;
-  if (d > max){ // origin follows the finger so the stick never runs out of travel
+  if (d > max){
     stick.ox = e.clientX - dx / d * max; stick.oy = e.clientY - dy / d * max;
     dx = e.clientX - stick.ox; dy = e.clientY - stick.oy;
   }
@@ -796,11 +1088,12 @@ cv.addEventListener('pointerup', endStick); cv.addEventListener('pointercancel',
 cv.addEventListener('contextmenu', e => e.preventDefault());
 
 window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   if (k === 'p' && g && !g.over){ setPaused(!paused); return; }
   if ((k === 'Enter' || k === ' ') && !overlay.hidden){
-    if (!cardTitle.hidden || !cardOver.hidden) start(); else if (!cardPause.hidden) setPaused(false);
+    if (!cards.title.hidden) start(); else if (!cards.pause.hidden) setPaused(false);
     return;
   }
   keys.add(k); initAudio();
@@ -812,20 +1105,145 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && g &
 function showCard(name){
   overlay.hidden = !name;
   for (const k in cards) cards[k].hidden = k !== name;
-  const b = name && cards[name].querySelector('.cta'); if (b) setTimeout(() => b.focus({ preventScroll:true }), 30);
+  const b = name && cards[name].querySelector('.cta'); if (b && name !== 'over') setTimeout(() => b.focus({ preventScroll:true }), 30);
 }
 function start(){ initAudio(); newGame(); paused = false; stick.active = false; showCard(null); }
-function setPaused(v){ if (!g || g.over) return; paused = v; keys.clear(); stick.active = false; showCard(v ? 'pause' : null); btnPause.textContent = v ? 'Resume' : 'Pause'; }
+function setPaused(v){ if (!g || g.over) return; paused = v; keys.clear(); stick.active = false; showCard(v ? 'pause' : null); $('btnPause').textContent = v ? 'Resume' : 'Pause'; }
 
-btnStart.addEventListener('click', start);
-btnAgain.addEventListener('click', start);
-btnResume.addEventListener('click', () => setPaused(false));
-btnPause.addEventListener('click', () => { if (g && !g.over) setPaused(!paused); });
-function syncSound(){ btnSound.textContent = muted ? 'Sound off' : 'Sound on'; btnSound.setAttribute('aria-pressed', String(!muted)); }
-btnSound.addEventListener('click', () => { muted = !muted; save('sp-mute', muted ? '1' : '0'); syncSound(); initAudio(); });
+$('btnStart').addEventListener('click', start);
+$('btnAgain').addEventListener('click', start);
+$('btnResume').addEventListener('click', () => setPaused(false));
+$('btnPause').addEventListener('click', () => { if (g && !g.over) setPaused(!paused); });
+function syncSound(){ $('btnSound').textContent = muted ? 'Sound off' : 'Sound on'; $('btnSound').setAttribute('aria-pressed', String(!muted)); }
+$('btnSound').addEventListener('click', () => { muted = !muted; save('sp-mute', muted ? '1' : '0'); syncSound(); initAudio(); if (muted && voiceOK) try { speechSynthesis.cancel(); } catch(e){} });
 syncSound();
+
+// ---------- leaderboard ----------
+let posted = null; // { name, ts } of this game's post, to highlight it
+function renderBoard(el, scores, mine){
+  if (!scores.length){ el.innerHTML = '<div class="h">No patrols logged yet. Be the first.</div>'; return; }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let h = '<div class="h">#</div><div class="h">Pilot</div><div class="h r">Rnd</div><div class="h r">Score</div>';
+  scores.slice(0, 10).forEach((s, i) => {
+    const me = mine && s.ts === mine.ts && s.name === mine.name ? ' me' : '';
+    h += `<div class="r${me}">${i+1}</div><div class="n${me}">${esc(s.name)}</div><div class="r${me}">${s.round}</div><div class="s${me}">${fmt(s.score)}</div>`;
+  });
+  el.innerHTML = h;
+}
+async function loadBoard(el, statusEl){
+  statusEl.textContent = 'Reaching patrol command…'; statusEl.className = 'status';
+  try {
+    const r = await fetch('/api/scores', { cache:'no-store' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    renderBoard(el, j.scores || [], posted);
+    statusEl.textContent = '';
+    return j.scores || [];
+  } catch(e){
+    statusEl.textContent = 'Leaderboard offline: ' + (e.message || 'no connection') + '. Your best is still saved on this device.';
+    statusEl.className = 'status err';
+    return null;
+  }
+}
+$('formName').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!g || !g.over || posted) return;
+  const name = $('pilotName').value.trim().toUpperCase().replace(/[^A-Z0-9_\-]/g, '').slice(0, 10) || 'PILOT';
+  savedName = name; save('sp-name', name);
+  const btn = $('btnSubmit'), st = $('postStatus');
+  btn.disabled = true; st.textContent = 'Posting…'; st.className = 'status';
+  try {
+    const r = await fetch('/api/scores', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name, score: g.score, round: g.round }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    posted = { name, ts: (j.scores || []).find(s => s.name === name && s.score === g.score) ? (j.scores.find(s => s.name === name && s.score === g.score)).ts : 0 };
+    renderBoard($('lbOver'), j.scores || [], posted);
+    st.textContent = j.rank ? `Logged. You are #${j.rank} in the sector.` : 'Logged. Not in the top 20 yet; keep flying.';
+  } catch(err){
+    btn.disabled = false;
+    st.textContent = 'Could not post: ' + (err.message || 'no connection'); st.className = 'status err';
+  }
+});
+$('btnBoard').addEventListener('click', () => { showCard('board'); $('lbTitle').innerHTML = ''; loadBoard($('lbTitle'), $('boardStatus')); });
+$('btnBoardBack').addEventListener('click', () => showCard('title'));
+
+// ---------- share card ----------
+let shareBlob = null, shareURL = '';
+function drawShareCard(){
+  const S = 1080, c = document.createElement('canvas'); c.width = S; c.height = S;
+  const x = c.getContext('2d');
+  x.fillStyle = C.space; x.fillRect(0,0,S,S);
+  // stars
+  for (let i=0;i<260;i++){ x.fillStyle = `rgba(230,226,255,${rnd(0.25,0.9)})`; const s = rnd(1,3.5); x.fillRect(Math.random()*S, Math.random()*S, s, s); }
+  const neb = x.createRadialGradient(S*0.7,S*0.3,0,S*0.7,S*0.3,S*0.7); neb.addColorStop(0,'rgba(255,93,143,0.18)'); neb.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle = neb; x.fillRect(0,0,S,S);
+  // a station in the corner
+  x.save(); x.translate(S*0.80, S*0.56); x.rotate(0.3); x.scale(0.85,0.85);
+  x.strokeStyle = 'rgba(255,93,143,0.5)'; x.lineWidth = 6;
+  x.beginPath(); for (let k=0;k<6;k++){ const a = k*Math.PI/3; x.lineTo(Math.cos(a)*120, Math.sin(a)*120); } x.closePath(); x.stroke();
+  for (let k=0;k<6;k++){ const a = k*Math.PI/3; x.fillStyle = '#2a1030'; x.strokeStyle = C.rose; x.lineWidth = 5; x.beginPath(); x.arc(Math.cos(a)*120, Math.sin(a)*120, 32, 0, TAU); x.fill(); x.stroke(); }
+  x.fillStyle = '#2b0f22'; x.strokeStyle = C.amber; x.lineWidth = 6; x.beginPath(); for (let k=0;k<6;k++){ const a = Math.PI/6 + k*Math.PI/3; x.lineTo(Math.cos(a)*48, Math.sin(a)*48); } x.closePath(); x.fill(); x.stroke();
+  x.restore();
+  // the player ship
+  x.save(); x.translate(S*0.2, S*0.72); x.rotate(-0.6); x.scale(5,5);
+  x.fillStyle = 'rgba(98,227,255,0.85)'; x.beginPath(); x.moveTo(-7,-4); x.lineTo(-24,0); x.lineTo(-7,4); x.closePath(); x.fill();
+  x.fillStyle = C.amber; x.strokeStyle = '#fff6df'; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(17,0); x.lineTo(-9,-11); x.lineTo(-5,0); x.lineTo(-9,11); x.closePath(); x.fill(); x.stroke();
+  x.restore();
+  // text
+  x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+  x.fillStyle = C.rose; x.font = `600 30px ${HUDF}`; x.fillText('S E C T O R   P A T R O L   R E P O R T', 80, 130);
+  x.fillStyle = C.amber; x.font = `400 118px "Major Mono Display", ${HUDF}`; x.shadowColor = C.amber; x.shadowBlur = 40;
+  x.fillText('star picket', 72, 262); x.shadowBlur = 0;
+  x.fillStyle = C.dim; x.font = `600 34px ${HUDF}`; x.fillText('S C O R E', 80, 400);
+  x.fillStyle = C.ink; x.font = `700 170px ${HUDF}`; x.shadowColor = C.amber; x.shadowBlur = 30;
+  x.fillText(fmt(g.score), 72, 560); x.shadowBlur = 0;
+  const who = ($('pilotName').value.trim().toUpperCase().replace(/[^A-Z0-9_\-]/g, '').slice(0,10)) || savedName || 'PILOT';
+  x.fillStyle = C.amber; x.font = `700 44px ${HUDF}`; x.fillText(who, 80, 640);
+  x.fillStyle = C.dim; x.font = `600 34px ${HUDF}`; x.fillText(`REACHED ROUND ${g.round}   ·   BEST ${fmt(best)}`, 80, 700);
+  x.fillStyle = 'rgba(141,134,184,0.5)'; x.fillRect(80, 930, S-160, 2);
+  x.fillStyle = C.ink; x.font = `700 40px ${HUDF}`; x.fillText('Fly your own patrol', 80, 990);
+  x.fillStyle = C.cyan; x.font = `700 40px ${HUDF}`; x.textAlign = 'right'; x.fillText('star-picket.vercel.app', S-80, 990);
+  return c;
+}
+async function openShare(){
+  if (!g) return;
+  showCard('share');
+  const st = $('shareStatus'); st.textContent = 'Rendering your patrol report…'; st.className = 'status';
+  try { if (document.fonts && document.fonts.load) await Promise.all([document.fonts.load(`400 118px "Major Mono Display"`), document.fonts.load(`700 170px "Chakra Petch"`)]); } catch(e){}
+  const c = drawShareCard();
+  shareBlob = await new Promise(res => c.toBlob(res, 'image/png'));
+  if (shareURL) URL.revokeObjectURL(shareURL);
+  shareURL = URL.createObjectURL(shareBlob);
+  $('shareImg').src = shareURL;
+  const file = new File([shareBlob], 'star-picket-score.png', { type:'image/png' });
+  const canFiles = navigator.canShare && navigator.canShare({ files:[file] });
+  $('btnShareNow').textContent = canFiles || navigator.share ? 'Share image' : 'Save image';
+  st.textContent = '';
+}
+$('btnShare').addEventListener('click', openShare);
+$('btnShareBack').addEventListener('click', () => showCard('over'));
+$('btnShareNow').addEventListener('click', async () => {
+  const st = $('shareStatus'); st.className = 'status';
+  const text = `I scored ${fmt(g.score)} on a Star Picket patrol (round ${g.round}). Beat it: ${SITE}`;
+  const file = new File([shareBlob], 'star-picket-score.png', { type:'image/png' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files:[file] })){ await navigator.share({ files:[file], text, title:'Star Picket' }); st.textContent = 'Shared.'; return; }
+    if (navigator.share){ await navigator.share({ text, title:'Star Picket', url: SITE }); st.textContent = 'Shared the link. Long-press the image to save it too.'; return; }
+  } catch(e){ if (e && e.name === 'AbortError'){ st.textContent = ''; return; } }
+  const a = document.createElement('a'); a.href = shareURL; a.download = 'star-picket-score.png'; document.body.appendChild(a); a.click(); a.remove();
+  st.textContent = 'Image saved. Post it with the link below.';
+});
+$('btnCopyLink').addEventListener('click', async () => {
+  const st = $('shareStatus'); st.className = 'status';
+  const text = `I scored ${fmt(g.score)} on a Star Picket patrol (round ${g.round}). Beat it: ${SITE}`;
+  try { await navigator.clipboard.writeText(text); st.textContent = 'Copied: ' + text; }
+  catch(e){ st.textContent = text; }
+});
+
 if (document.fonts && document.fonts.load) document.fonts.load(`700 28px "Chakra Petch"`).catch(()=>{});
 showCard('title');
+window.__sp = { get g(){ return g; }, launchSquad, spawnSpy, setCond, endGame, start, update, killFighter };
 })();
 </script>
 </body>

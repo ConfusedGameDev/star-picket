@@ -3,7 +3,9 @@
 A Bosconian-style free-roaming space shooter for the browser. Live at https://star-picket.vercel.app
 
 - Press anywhere and drag to steer (floating virtual stick). Guns fire fore and aft automatically.
-- Clear every hex station in the sector: destroy all six cannon pods, or shoot the core.
+- Clear every station in the sector: destroy all its cannon pods, or shoot the core. Stations come in five designs,
+  mixed more widely as rounds go up: Hex (6 pods), Lance (a long hull, 6 pods), Trident (three forked arms, 6 pods),
+  Diamond (4 pods, fragile core, fires faster) and Crown (8 pods, tougher core, fires missiles in pairs).
 - Alert conditions: Green → Yellow (a base has noticed you) → Red (you lingered too long, or a spy ship got away). Red brings fighters from every direction until the sector is cleared.
 - Spy ship: shoot it before it leaves (200 → 400 → 800).
 - Squadrons: five ships in a V, launched from a base ("Battle stations!"). Kill the leader and the wingmen break off and flee; kill all five for a bonus.

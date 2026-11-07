@@ -278,6 +278,37 @@ function initAudio(){
     echo.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(bus);
   } catch(e){ ac = null; }
 }
+// Mobile Safari: Web Audio only starts inside a user gesture, can drop back to "suspended" or
+// "interrupted" (calls, backgrounding), and by default obeys the ringer switch, which silences
+// the game completely. So: resume on every gesture, play a one-sample buffer the first time,
+// and ask for the "playback" audio session (Safari 17+) or, on older iOS, keep a silent <audio>
+// element looping, which switches the page to the same session.
+let unlocked = false, silentEl = null;
+function silentWav(){
+  const n = 4000, buf = new ArrayBuffer(44 + n), v = new DataView(buf), w = (o, s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36 + n, true); w(8,'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36,'data'); v.setUint32(40, n, true);
+  for (let i=0;i<n;i++) v.setUint8(44+i, 128);
+  return URL.createObjectURL(new Blob([buf], { type:'audio/wav' }));
+}
+function unlockAudio(){
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch(e){}
+  initAudio();
+  if (!ac) return;
+  if (ac.state !== 'running') { try { ac.resume().catch(() => {}); } catch(e){} }
+  if (unlocked) { if (silentEl && silentEl.paused && !muted) silentEl.play().catch(() => {}); return; }
+  unlocked = true;
+  try { const s = ac.createBufferSource(); s.buffer = ac.createBuffer(1, 1, ac.sampleRate); s.connect(ac.destination); s.start(0); } catch(e){}
+  if (!navigator.audioSession && /iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document){
+    try { silentEl = new Audio(silentWav()); silentEl.loop = true; silentEl.setAttribute('playsinline', ''); silentEl.play().catch(() => {}); } catch(e){}
+  }
+}
+['pointerdown','pointerup','touchend','click','keydown'].forEach(ev => window.addEventListener(ev, unlockAudio, { capture:true, passive:true }));
+document.addEventListener('visibilitychange', () => {
+  if (!ac) return;
+  if (document.hidden){ if (silentEl) silentEl.pause(); }
+  else if (ac.state !== 'running') { try { ac.resume().catch(() => {}); } catch(e){} }
+});
 function tone(f0,f1,dur,type,vol,delay){
   if (!ac || muted) return;
   const t = ac.currentTime + (delay||0), o = ac.createOscillator(), g = ac.createGain();

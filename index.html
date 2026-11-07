@@ -86,6 +86,18 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
 .status{font:500 12px/1.4 var(--hud);color:var(--dim);min-height:1.4em}
 .status.err{color:var(--rose)}
 #shareImg{display:block;width:100%;max-width:360px;border:1px solid rgba(141,134,184,.35);border-radius:6px}
+.set{display:grid;grid-template-columns:1fr auto;gap:14px 16px;align-items:center;
+  border-top:1px solid rgba(141,134,184,.25);padding-top:14px}
+.set .lbl{font:700 14px/1.2 var(--hud);color:var(--ink);letter-spacing:.06em}
+.set .lbl small{display:block;margin-top:3px;font:500 12px/1.35 var(--hud);color:var(--dim);letter-spacing:0}
+.seg{display:inline-flex;border:1px solid rgba(141,134,184,.45);border-radius:6px;overflow:hidden}
+.seg button{font:700 12px/1 var(--hud);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  background:rgba(14,11,30,.8);border:0;padding:11px 12px;cursor:pointer;min-width:64px}
+.seg button + button{border-left:1px solid rgba(141,134,184,.45)}
+.seg button[aria-pressed="true"]{color:var(--space);background:var(--amber)}
+@media (max-width:520px){ #btnSound{display:none} } /* it lives in Settings too; keeps the corner clear of the score */
+.credit{font:500 11px/1.4 var(--hud);color:var(--dim)}
+.credit a{color:var(--cyan)}
 @media (prefers-reduced-motion: reduce){ h1{text-shadow:none} }
 </style>
 </head>
@@ -96,6 +108,7 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
 
 <div class="corner">
   <button id="btnSound" type="button" aria-pressed="true">Sound on</button>
+  <button id="btnSettings" type="button">Settings</button>
   <button id="btnPause" type="button">Pause</button>
 </div>
 
@@ -117,8 +130,9 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
     <div class="row">
       <button class="cta" id="btnStart" type="button">Launch</button>
       <button class="ghost" id="btnBoard" type="button">Top pilots</button>
+      <button class="ghost" id="btnTitleSettings" type="button">Settings</button>
     </div>
-    <div class="hint">Keyboard: arrows or WASD to steer, P to pause.</div>
+    <div class="hint">Keyboard: arrows or WASD to steer, P to pause, V to switch art style.</div>
   </div>
 
   <div class="card" id="cardOver" hidden>
@@ -159,7 +173,33 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
   <div class="card" id="cardPause" hidden>
     <div class="kicker">Holding position</div>
     <h1>paused</h1>
-    <button class="cta" id="btnResume" type="button">Resume</button>
+    <div class="row">
+      <button class="cta" id="btnResume" type="button">Resume</button>
+      <button class="ghost" id="btnPauseSettings" type="button">Settings</button>
+    </div>
+  </div>
+
+  <div class="card" id="cardSettings" hidden>
+    <div class="kicker">Settings</div>
+    <div class="set">
+      <div class="lbl">Art style<small>Neon vector lines, or 16-bit pixel sprites.</small></div>
+      <div class="seg" role="group" aria-label="Art style">
+        <button type="button" data-style="vector">Vector</button>
+        <button type="button" data-style="pixel">Pixel</button>
+      </div>
+      <div class="lbl">Music<small>A soundtrack that your kills play along with. Off gives the classic arcade effects.</small></div>
+      <div class="seg" role="group" aria-label="Music">
+        <button type="button" data-music="1">On</button>
+        <button type="button" data-music="0">Off</button>
+      </div>
+      <div class="lbl">Sound</div>
+      <div class="seg" role="group" aria-label="Sound">
+        <button type="button" data-sound="1">On</button>
+        <button type="button" data-sound="0">Off</button>
+      </div>
+    </div>
+    <div class="credit">Pixel art: <a href="https://mattwalkden.itch.io/lunar-battle-pack" target="_blank" rel="noopener">Lunar Battle Pack</a> by Matt Walkden (CC0).</div>
+    <button class="cta" id="btnSettingsBack" type="button">Done</button>
   </div>
 </div>
 
@@ -167,8 +207,10 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
-const cv = $('game'), ctx = cv.getContext('2d'), probe = $('probe'), overlay = $('overlay');
-const cards = { title:$('cardTitle'), over:$('cardOver'), share:$('cardShare'), board:$('cardBoard'), pause:$('cardPause') };
+const cv = $('game'), mctx = cv.getContext('2d'), probe = $('probe'), overlay = $('overlay');
+// `ctx` is whatever surface is being drawn: the main canvas, or in pixel style the 1x world buffer.
+let ctx = mctx;
+const cards = { title:$('cardTitle'), over:$('cardOver'), share:$('cardShare'), board:$('cardBoard'), pause:$('cardPause'), settings:$('cardSettings') };
 const SITE = 'https://star-picket.vercel.app';
 
 const C = { space:'#07060f', ink:'#ece8ff', dim:'#8d86b8', amber:'#ffc861', rose:'#ff5d8f', cyan:'#62e3ff', mine:'#ff7a3d',
@@ -207,18 +249,33 @@ const easeOutBack = u => { const c = 1.9; return 1 + (c+1)*Math.pow(u-1,3) + c*M
 const fmt = n => Number(n).toLocaleString('en-US');
 
 // ---------- storage ----------
-let best = 0, muted = false, savedName = '';
-try { best = +localStorage.getItem('sp-best') || 0; muted = localStorage.getItem('sp-mute') === '1'; savedName = localStorage.getItem('sp-name') || ''; } catch(e){}
+let best = 0, muted = false, savedName = '', style = 'vector', musicOn = true;
+try {
+  best = +localStorage.getItem('sp-best') || 0; muted = localStorage.getItem('sp-mute') === '1'; savedName = localStorage.getItem('sp-name') || '';
+  style = localStorage.getItem('sp-style') === 'pixel' ? 'pixel' : 'vector'; musicOn = localStorage.getItem('sp-music') !== '0';
+} catch(e){}
 const save = (k,v) => { try { localStorage.setItem(k, v); } catch(e){} };
 
 // ---------- audio ----------
-let ac = null, noiseBuf = null, lastTick = 0;
+const BPM = 124, BEAT = 60 / BPM, S16 = BEAT / 4;
+let ac = null, noiseBuf = null, lastTick = 0, bus = null, echo = null, bed = null;
 function initAudio(){
   if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
   try {
     ac = new (window.AudioContext || window.webkitAudioContext)();
     noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    // everything goes through one gentle compressor so stacked notes never clip
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+    comp.connect(ac.destination);
+    bus = ac.createGain(); bus.gain.value = 0.9; bus.connect(comp);
+    bed = ac.createGain(); bed.gain.value = 0.55; bed.connect(bus);
+    // dotted-eighth echo, so the repeats land on the beat grid too
+    echo = ac.createGain();
+    const dl = ac.createDelay(1), fb = ac.createGain(), lp = ac.createBiquadFilter();
+    dl.delayTime.value = BEAT * 0.75; fb.gain.value = 0.3; lp.type = 'lowpass'; lp.frequency.value = 2400;
+    echo.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(bus);
   } catch(e){ ac = null; }
 }
 function tone(f0,f1,dur,type,vol,delay){
@@ -226,21 +283,159 @@ function tone(f0,f1,dur,type,vol,delay){
   const t = ac.currentTime + (delay||0), o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1), t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+  o.connect(g).connect(bus); o.start(t); o.stop(t+dur+0.02);
 }
-function noise(dur,vol,freq){
+function noise(dur,vol,freq,at,dest,type){
   if (!ac || muted) return;
-  const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-  s.buffer = noiseBuf; f.type='lowpass'; f.frequency.setValueAtTime(freq,t); f.frequency.exponentialRampToValueAtTime(80,t+dur);
+  const t = at || ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = noiseBuf; f.type = type || 'lowpass'; f.frequency.setValueAtTime(freq,t);
+  if (!type) f.frequency.exponentialRampToValueAtTime(80,t+dur);
   g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  s.connect(f).connect(g).connect(ac.destination); s.start(t); s.stop(t+dur);
+  s.connect(f).connect(g).connect(dest || bus); s.start(t, dur < 0.4 ? Math.random()*0.5 : 0); s.stop(t+dur);
 }
+
+// ---------- music ----------
+// A 124 BPM loop over Am · F · C · G (two bars each). The drums and bass get busier as the
+// condition rises. Every kill is a note: it waits for the next 16th, is picked from the chord
+// that is playing at that moment, and a run of kills climbs the chord like a melody. Kills that
+// land together (a mine chain, a squadron) spill into the following 16ths and become an arpeggio.
+const PROG = [[57,60,64],[53,57,60],[48,52,55],[55,59,62]];
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const M = { running:false, step:0, next:0, slot:-1, pos:0, dir:1, lastKill:-9 };
+const chordAt = n => PROG[Math.floor(n / 32) % PROG.length];
+function ladder(ch){ const L = []; for (let o = 12; o <= 36; o += 12) for (const m of ch) L.push(m + o); return L.sort((a,b) => a - b); }
+
+function voice(m, t, o){
+  // a plucked synth: two detuned oscillators through a closing lowpass, with an echo send
+  const dur = o.dur || 0.42, f = mtof(m), g = ac.createGain(), lp = ac.createBiquadFilter();
+  lp.type = 'lowpass'; lp.Q.value = o.q || 4;
+  lp.frequency.setValueAtTime(Math.min(16000, f * (o.bright || 8)), t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(120, f * 1.2), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(o.vol, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  for (const [type, det, lvl] of o.osc || [['triangle',0,1],['square',7,0.35]]){
+    const os = ac.createOscillator(), og = ac.createGain();
+    os.type = type; os.frequency.setValueAtTime(f, t); os.detune.value = det; og.gain.value = lvl;
+    os.connect(og).connect(lp); os.start(t); os.stop(t + dur + 0.05);
+  }
+  lp.connect(g); g.connect(o.dest || bus);
+  if (o.send !== 0){ const s = ac.createGain(); s.gain.value = o.send || 0.35; g.connect(s).connect(echo); }
+}
+function bell(m, t, vol){
+  // FM bell for station parts: a sine carrier rung by a sine at 3.5x
+  const f = mtof(m), c = ac.createOscillator(), mo = ac.createOscillator(), mg = ac.createGain(), g = ac.createGain();
+  c.frequency.value = f; mo.frequency.value = f * 3.5;
+  mg.gain.setValueAtTime(f * 2.2, t); mg.gain.exponentialRampToValueAtTime(1, t + 0.8);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+  mo.connect(mg).connect(c.frequency); c.connect(g); g.connect(bus);
+  const s = ac.createGain(); s.gain.value = 0.3; g.connect(s).connect(echo);
+  c.start(t); mo.start(t); c.stop(t + 1.2); mo.stop(t + 1.2);
+}
+function kick(t, vol){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+  o.connect(g).connect(bed); o.start(t); o.stop(t + 0.3);
+}
+function bassNote(m, t, vol, dur){ voice(m, t, { vol, dur: dur || 0.2, bright: 5, q: 6, osc: [['sawtooth',0,1],['square',-1200,0.5]], dest: bed, send: 0 }); }
+function pad(ch, t, dur){
+  for (const m of ch){
+    const f = mtof(m), o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+    o.type = 'sawtooth'; o2.type = 'sawtooth'; o.frequency.value = f; o2.frequency.value = f; o.detune.value = -9; o2.detune.value = 9;
+    lp.type = 'lowpass'; lp.frequency.value = 900;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.022, t + 0.5);
+    g.gain.setValueAtTime(0.022, t + dur - 0.5); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp); o2.connect(lp); lp.connect(g).connect(bed);
+    o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+  }
+}
+function playStep(n, t){
+  const ch = chordAt(n), b = n % 16, root = ch[0] - 24;
+  if (n % 32 === 0) pad(ch.map(m => m - 12), t, BEAT * 8);
+  if (!g || !g.p.alive) return; // the band drops out while you respawn; the pad keeps going
+  const lvl = g.cond;
+  if (b % 8 === 0 || (lvl === 2 && b % 4 === 0)) kick(t, b === 0 ? 0.55 : 0.42);
+  if (lvl >= 1 && b % 8 === 4) noise(0.14, 0.12, 1800, t, bed, 'bandpass');            // clap on 2 and 4
+  if (lvl === 2 ? true : lvl === 1 ? b % 2 === 0 : b % 4 === 2) noise(0.035, lvl === 2 && b % 2 ? 0.035 : 0.06, 7000, t, bed, 'highpass');
+  const pat = lvl === 2 ? [0,2,3,4,6,8,10,11,12,14] : lvl === 1 ? [0,2,4,6,8,10,12,14] : [0,6,8,14];
+  if (pat.includes(b)) bassNote(root + (lvl === 2 && b % 4 === 2 ? 12 : 0), t, 0.22, lvl === 2 ? 0.14 : 0.24);
+}
+function musicStart(){
+  if (!ac || M.running) return;
+  M.running = true; M.next = ac.currentTime + 0.06; M.slot = M.step - 1;
+}
+function musicStop(){ M.running = false; }
+function musicTick(){
+  if (!ac || !M.running) return;
+  if (M.next < ac.currentTime - 0.25) M.next = ac.currentTime + 0.03; // we fell behind (tab stalled): rejoin
+  while (M.next < ac.currentTime + 0.12){
+    if (musicOn && !muted) playStep(M.step, M.next);
+    M.step++; M.next += S16;
+  }
+}
+// the next free 16th from now; crowded kills queue up behind each other, a few at most
+function slotTime(){
+  const now = ac.currentTime + 0.01;
+  let n = M.step + Math.ceil((now - M.next) / S16);
+  if (n <= M.slot){ n = M.slot + 1; if (n - M.step > 8) return null; }
+  M.slot = n;
+  return { n, t: M.next + (n - M.step) * S16 };
+}
+function melodyNote(n){
+  const L = ladder(chordAt(n));
+  if (time - M.lastKill > 1.6){ M.pos = Math.floor(Math.random() * 3); M.dir = 1; } // a fresh run starts low
+  else { M.pos += M.dir; if (M.pos >= L.length - 1 || M.pos <= 0) M.dir = -M.dir; }
+  M.pos = clamp(M.pos, 0, L.length - 1); M.lastKill = time;
+  return { m: L[M.pos], L };
+}
+function musical(k){
+  if (!ac || muted || !M.running) return false;
+  const s = slotTime(); if (!s) return true;
+  const { m, L } = melodyNote(s.n), t = s.t, ch = chordAt(s.n);
+  if (k === 'fighter'){ voice(m, t, { vol:0.15 }); noise(0.12, 0.05, 1600); }
+  else if (k === 'leader'){ voice(m, t, { vol:0.13 }); voice(L[Math.min(L.length-1, M.pos + 2)], t, { vol:0.11 }); noise(0.2, 0.08, 1600); }
+  else if (k === 'pod'){ bell(m - 12, t, 0.13); noise(0.18, 0.07, 1400); }
+  else if (k === 'rock'){ voice(m + 12, t, { vol:0.06, dur:0.25, bright:4, osc:[['sine',0,1]] }); }
+  else if (k === 'missile'){ voice(m + 12, t, { vol:0.05, dur:0.12, osc:[['square',0,1]], send:0.2 }); }
+  else if (k === 'mine'){
+    voice(ch[0] - 12, t, { vol:0.3, dur:0.5, bright:3, osc:[['sine',0,1],['triangle',1200,0.3]], send:0.15 });
+    noise(0.5, 0.25, 2000);
+  }
+  else if (k === 'station'){
+    // a downbeat of its own: sub drop, the whole chord, then a run up the ladder
+    kick(t, 0.8); voice(ch[0] - 24, t, { vol:0.32, dur:1.4, bright:3, osc:[['sine',0,1]], send:0 });
+    ch.forEach(c => voice(c, t, { vol:0.09, dur:1.2, bright:5, osc:[['sawtooth',-6,1],['sawtooth',6,1]] }));
+    L.forEach((x, i) => voice(x, t + (i + 1) * S16 / 2, { vol:0.08, dur:0.3 }));
+    M.slot = s.n + 4;
+    noise(1.1, 0.3, 900);
+  }
+  else if (k === 'squad' || k === 'spy'){
+    const run = k === 'spy' ? L.slice(2, 7) : L;
+    run.forEach((x, i) => voice(x, t + i * S16 / 2, { vol:0.09, dur:0.3 }));
+    if (k === 'spy') noise(0.2, 0.1, 2400);
+  }
+  return true;
+}
+// immediate, ungridded blips that are still pitched to the chord
+function chordBlip(k){
+  if (!ac || muted || !M.running || !musicOn) return false;
+  const ch = chordAt(M.step), m = ch[Math.floor(Math.random()*3)];
+  if (k === 'hit') voice(m + 24, ac.currentTime, { vol:0.035, dur:0.06, osc:[['square',0,1]], send:0 });
+  else voice(m + 36, ac.currentTime, { vol:0.025, dur:0.08, osc:[['sine',0,1]], send:0.15 });
+  return true;
+}
+// destruction sounds: musical when the soundtrack is on, the original arcade set otherwise
+const CLASSIC = { fighter:['boom'], leader:['boom'], pod:['boom'], rock:['boom'], station:['big'], mine:['mine'], spy:['boom','bonus'], squad:['bonus'], missile:['hit'] };
+function kill(k){ if (musicOn && musical(k)) return; for (const c of CLASSIC[k]) sfx(c); }
+
 function sfx(k){
+  if (k === 'tick'){ const n = performance.now(); if (n - lastTick < 35) return; lastTick = n; }
+  if ((k === 'hit' || k === 'tick') && chordBlip(k)) return;
   if (k==='hit') tone(900,420,0.06,'square',0.035);
   else if (k==='boom') noise(0.35,0.22,1400);
   else if (k==='big'){ noise(1.3,0.45,900); tone(140,35,0.9,'sine',0.4); }
   else if (k==='mine'){ noise(0.6,0.35,2200); tone(300,60,0.4,'triangle',0.15); }
-  else if (k==='tick'){ const n = performance.now(); if (n - lastTick < 35) return; lastTick = n; tone(1500,2100,0.045,'sine',0.05); }
+  else if (k==='tick') tone(1500,2100,0.045,'sine',0.05);
   else if (k==='die'){ tone(520,50,1.0,'sawtooth',0.14); noise(0.9,0.35,1000); }
   else if (k==='life'){ tone(660,660,0.1,'square',0.06); tone(990,990,0.18,'square',0.06,0.11); }
   else if (k==='missile') tone(300,700,0.12,'triangle',0.04);
@@ -282,6 +477,63 @@ const layers = [0.18, 0.42, 0.75].map((f,i) => {
   return { c, f };
 });
 
+// ---------- pixel art (Lunar Battle Pack, CC0) ----------
+// Sheets load on first use; until they are in, pixel style quietly draws the vector art.
+const ART = { ok:false, loading:null };
+const ART_FILES = { ships:'Spaceships.png', missile:'Missiles.png', turret:'Turrets.png', expl:'Explosion.png', bolt:'Fx_02.png',
+                    thrust:'Thruster_01.png', rocks:'Asteroids_Foreground.png', rocksBg:'Asteroids.png', stars:'Star_Tiles.png', debris:'debris.png' };
+const PIX_BG = '#001020';
+// [row, col] in Spaceships.png: rows are green, red, blue; columns go small to large
+const SHIP = { player:[2,3], I:[1,0], P:[0,2], E:[1,1], Ilead:[1,4], Plead:[0,4], Elead:[1,3], spy:[0,0] };
+function loadArt(){
+  if (ART.loading) return ART.loading;
+  ART.loading = Promise.all(Object.entries(ART_FILES).map(([k,f]) => new Promise((res, rej) => {
+    const im = new Image(); im.onload = () => { ART[k] = im; res(); }; im.onerror = () => rej(f); im.src = 'assets/lunar/' + f;
+  }))).then(() => { prepArt(); ART.ok = true; }).catch(e => { ART.failed = String(e); });
+  return ART.loading;
+}
+function sheetCanvas(im, fn){
+  const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+  const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+  if (fn){ const d = x.getImageData(0, 0, c.width, c.height); fn(d.data); x.putImageData(d, 0, 0); }
+  return c;
+}
+function prepArt(){
+  // the star tiles carry an opaque navy backdrop: key it out so they can be scattered
+  ART.starsK = sheetCanvas(ART.stars, d => { for (let i=0;i<d.length;i+=4) if (d[i] < 8 && Math.abs(d[i+1]-16) < 8 && Math.abs(d[i+2]-32) < 8) d[i+3] = 0; });
+  // foreground rocks are drawn for a lit moon scene; lift them so they read against deep space
+  ART.rocksL = sheetCanvas(ART.rocks, d => { for (let i=0;i<d.length;i+=4){ d[i] = Math.min(255, d[i]*1.9 + 18); d[i+1] = Math.min(255, d[i+1]*1.9 + 16); d[i+2] = Math.min(255, d[i+2]*1.7 + 26); } });
+  ART.layers = [0.18, 0.42, 0.75].map((f, i) => {
+    const c = document.createElement('canvas'); c.width = c.height = TILE;
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    if (i === 0){
+      for (let k=0;k<10;k++){ x.globalAlpha = 0.55; x.drawImage(ART.debris, Math.floor(rnd(0,6))*64, 0, 64, 64, Math.floor(rnd(0,TILE-64)), Math.floor(rnd(0,TILE-64)), 64, 64); }
+      for (let k=0;k<3;k++){ x.globalAlpha = 0.5; x.drawImage(ART.rocksBg, Math.floor(rnd(0,4))*64, 0, 64, 64, Math.floor(rnd(0,TILE-64)), Math.floor(rnd(0,TILE-64)), 64, 64); }
+      x.globalAlpha = 1;
+    }
+    const n = [70, 40, 18][i];
+    for (let k=0;k<n;k++){
+      const t = 1 + Math.floor(Math.random()*6);
+      x.drawImage(ART.starsK, t*16, 0, 16, 16, Math.floor(rnd(0,TILE-16)), Math.floor(rnd(0,TILE-16)), 16, 16);
+    }
+    if (i === 2) for (let k=0;k<6;k++) x.drawImage(ART.debris, Math.floor(rnd(0,6))*64, 0, 64, 64, Math.floor(rnd(0,TILE-64)), Math.floor(rnd(0,TILE-64)), 64, 64);
+    return { c, f };
+  });
+}
+// world buffer: pixel style draws the playfield at 1 canvas pixel per CSS pixel, then scales it up unsmoothed
+const wcv = document.createElement('canvas'), wctx = wcv.getContext('2d');
+const snapA = a => Math.round(a / (TAU/32)) * (TAU/32); // 32 facings, like pre-rotated arcade sprites
+function spr(im, sx, sy, sw, sh, x, y, a, sc, flip){
+  sc = sc || 1;
+  ctx.save(); ctx.translate(Math.round(x), Math.round(y));
+  if (a) ctx.rotate(snapA(a));
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(im, sx, sy, sw, sh, -sw*sc/2, -sh*sc/2, sw*sc, sh*sc);
+  ctx.restore();
+}
+const shipSpr = (key, x, y, a) => { const [r,c] = SHIP[key]; spr(ART.ships, c*64, r*64, 64, 64, x, y, a); };
+const pixOn = () => style === 'pixel' && ART.ok;
+
 // ---------- game state ----------
 let g = null, paused = false, time = 0, demoCam = { x: 0, y: 0 };
 const stick = { active:false, id:null, ox:0, oy:0, x:0, y:0, ang:0, mag:0 };
@@ -292,7 +544,7 @@ function newGame(){
     score:0, disp:0, lives:3, round:0, nextLife:20000, lifeStep:70000,
     p:{ x:WS/2, y:WS/2, a:-Math.PI/2, v:200, inv:2, alive:true },
     cam:{ x:WS/2, y:WS/2 },
-    bullets:[], miss:[], stations:[], fighters:[], rocks:[], parts:[], pops:[], rings:[],
+    bullets:[], miss:[], stations:[], fighters:[], rocks:[], parts:[], pops:[], rings:[], anims:[],
     squads:[], spy:null, spyT:0, spyStreak:0,
     cond:0, condMin:0, roundT:0, sirenT:0, redFlash:0,
     fireT:0, spawnT:3, squadT:0, shake:0, stop:0, deadT:0, clearT:0, banner:null, bump:0, over:false,
@@ -371,6 +623,8 @@ function burst(x,y,n,col,spd,life,size){
   }
 }
 function ring(x,y,r,col,dur){ g.rings.push({ x, y, r, col, t:0, dur: dur || 0.45 }); }
+// sprite explosion for the pixel style (vector style ignores these)
+function blast(x,y,sc,delay){ if (g.anims.length < 80) g.anims.push({ x, y, sc, t: -(delay || 0) }); }
 function addPop(x,y,v,o){
   o = o || {};
   g.pops.push({ x, y, v, t:0, ph:0, delay:o.delay||0, big:!!o.big, col:o.col||C.amber, sx:0, sy:0, jx:rnd(-6,6), label:o.label||'' });
@@ -393,7 +647,7 @@ function destroyStation(s, hx, hy){
   burst(s.x, s.y, 30, '#ffffff', 520, 0.5, 2);
   ring(s.x, s.y, 220, C.amber, 0.6); ring(s.x, s.y, 130, C.rose, 0.45);
   g.shake = Math.max(g.shake, 16); g.stop = 0.14;
-  sfx('big');
+  kill('station'); blast(s.x, s.y, 3); s.pods.forEach((q,k) => { const pp = podPos(s,k); blast(pp.x, pp.y, 1, 0.08*k); });
   if (g.stations.every(t => !t.alive) && !g.clearT){
     g.clearT = 3; banner('SECTOR CLEAR', 'Next round incoming', 3);
   }
@@ -407,7 +661,7 @@ function hitPod(s,k,bx,by){
   const pp = podPos(s,k);
   addPop(bx, by, 200, { col:'#ffb3cb' });
   burst(pp.x, pp.y, 22, C.rose, 260, 0.7); ring(pp.x, pp.y, 50, C.rose, 0.3);
-  g.shake = Math.max(g.shake, 5); sfx('boom');
+  g.shake = Math.max(g.shake, 5); kill('pod'); blast(pp.x, pp.y, 1);
   if (s.pods.every(p => !p.alive)) destroyStation(s, s.x, s.y);
 }
 function hitCore(s,bx,by){
@@ -425,7 +679,7 @@ function killFighter(f, x, y, silent){
   }
   burst(f.x, f.y, f.leader ? 30 : 18, col, 240, 0.6); burst(f.x, f.y, 6, '#ffffff', 300, 0.3);
   if (f.leader) ring(f.x, f.y, 60, '#ffffff', 0.35);
-  g.shake = Math.max(g.shake, f.leader ? 7 : 4); sfx('boom');
+  g.shake = Math.max(g.shake, f.leader ? 7 : 4); kill(f.leader ? 'leader' : 'fighter'); blast(f.x, f.y, f.leader ? 2 : 1);
   if (f.squad) onSquadLoss(f.squad, f, x, y);
 }
 function killSpy(x, y){
@@ -433,7 +687,7 @@ function killSpy(x, y){
   const v = [200, 400, 800][Math.min(2, g.spyStreak)]; g.spyStreak++;
   addPop(x, y, v, { col: C.spy, big: v >= 800 });
   burst(s.x, s.y, 40, C.spy, 300, 0.8); burst(s.x, s.y, 12, '#ffffff', 380, 0.4);
-  ring(s.x, s.y, 90, C.spy, 0.4); g.shake = Math.max(g.shake, 8); sfx('boom'); sfx('bonus');
+  ring(s.x, s.y, 90, C.spy, 0.4); g.shake = Math.max(g.shake, 8); kill('spy'); blast(s.x, s.y, 2);
   g.spy = null; g.spyT = rnd(18, 30);
 }
 function killRock(r, x, y){
@@ -441,7 +695,7 @@ function killRock(r, x, y){
   if (r.mine){
     addPop(x, y, 20, { col:'#ffc7a6' });
     ring(r.x, r.y, 115, C.mine, 0.4); burst(r.x, r.y, 40, C.mine, 330, 0.7);
-    g.shake = Math.max(g.shake, 9); sfx('mine');
+    g.shake = Math.max(g.shake, 9); kill('mine'); blast(r.x, r.y, 3);
     for (const f of g.fighters) if (!f.dead && dist(f.x,f.y,r.x,r.y) < 115) killFighter(f, f.x, f.y);
     for (const m of g.miss) if (!m.dead && dist(m.x,m.y,r.x,r.y) < 115){ m.dead = true; addPop(m.x,m.y,10,{col:'#ffb3cb'}); }
     for (const o of g.rocks) if (!o.dead && o !== r && dist(o.x,o.y,r.x,r.y) < 115) killRock(o, o.x, o.y);
@@ -449,7 +703,7 @@ function killRock(r, x, y){
     if (g.p.alive && dist(g.p.x,g.p.y,r.x,r.y) < 80) killPlayer();
   } else {
     addPop(x, y, 10, { col:'#d8d2ff' });
-    burst(r.x, r.y, 12 + r.r*0.5, '#a39bd6', 160, 0.7); sfx('boom');
+    burst(r.x, r.y, 12 + r.r*0.5, '#a39bd6', 160, 0.7); kill('rock'); blast(r.x, r.y, r.r > 22 ? 2 : 1);
   }
 }
 function killPlayer(){
@@ -457,7 +711,7 @@ function killPlayer(){
   if (!p.alive || p.inv > 0) return;
   p.alive = false; g.lives--; g.deadT = 2.6;
   burst(p.x, p.y, 70, C.amber, 360, 1.2, 3); burst(p.x, p.y, 40, '#ffffff', 450, 0.6);
-  ring(p.x, p.y, 160, C.amber, 0.6);
+  ring(p.x, p.y, 160, C.amber, 0.6); blast(p.x, p.y, 3); blast(p.x + 14, p.y - 8, 1, 0.12); blast(p.x - 12, p.y + 10, 1, 0.22);
   g.shake = 22; g.stop = 0.18; sfx('die');
 }
 
@@ -499,7 +753,7 @@ function onSquadLoss(sq, f, x, y){
     sq.done = true;
     const T = TYPES[sq.type];
     addPop(x, y, T.bonus, { big:true, col:'#ffffff', delay:0.25, label:'SQUADRON' });
-    ring(x, y, 140, T.col, 0.5); sfx('bonus');
+    ring(x, y, 140, T.col, 0.5); kill('squad');
     g.shake = Math.max(g.shake, 10);
   }
 }
@@ -641,7 +895,7 @@ function update(dtReal){
     if (g.spy && dist(b.x,b.y,g.spy.x,g.spy.y) < 16){ b.dead = true; killSpy(b.x,b.y); continue; }
     for (const f of g.fighters){ if (!f.dead && dist(b.x,b.y,f.x,f.y) < 15){ b.dead = true; killFighter(f,b.x,b.y); break; } }
     if (b.dead) continue;
-    for (const m of g.miss){ if (!m.dead && dist(b.x,b.y,m.x,m.y) < 10){ b.dead = true; m.dead = true; addPop(b.x,b.y,10,{col:'#ffb3cb'}); burst(m.x,m.y,10,C.rose,180,0.4); sfx('hit'); break; } }
+    for (const m of g.miss){ if (!m.dead && dist(b.x,b.y,m.x,m.y) < 10){ b.dead = true; m.dead = true; addPop(b.x,b.y,10,{col:'#ffb3cb'}); burst(m.x,m.y,10,C.rose,180,0.4); blast(m.x,m.y,1); kill('missile'); break; } }
     if (b.dead) continue;
     for (const r of g.rocks){ if (!r.dead && dist(b.x,b.y,r.x,r.y) < r.r + 2){ b.dead = true; killRock(r,b.x,b.y); break; } }
   }
@@ -732,6 +986,7 @@ function update(dtReal){
 
   for (const q of g.parts){ q.x += q.vx*dt; q.y += q.vy*dt; q.vx *= 0.96; q.vy *= 0.96; q.life -= dt; }
   for (const q of g.rings) q.t += dtReal;
+  for (const q of g.anims) q.t += dtReal;
 
   for (const q of g.pops){
     if (q.delay > 0){ q.delay -= dtReal; continue; }
@@ -754,6 +1009,7 @@ function update(dtReal){
   g.rocks = g.rocks.filter(o => !o.dead);
   g.parts = g.parts.filter(o => o.life > 0);
   g.rings = g.rings.filter(o => o.t < o.dur);
+  g.anims = g.anims.filter(o => o.t < 0.56);
   g.pops = g.pops.filter(o => !o.dead);
 }
 
@@ -788,6 +1044,11 @@ function scoreTarget(){ const L = Math.max(16, inset.l) + 2, T = Math.max(12, in
 function drawShip(f){
   const s = toS(f.x,f.y); if (!onScreen(s,30)) return;
   const T = f.type ? TYPES[f.type] : null, col = T ? T.col : C.cyan;
+  if (pixOn()){
+    shipSpr((f.type || 'I') + (f.leader ? 'lead' : ''), s.x, s.y, f.a);
+    if (f.leader){ ctx.globalAlpha = 0.5 + 0.5*Math.sin(time*10); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(Math.round(s.x), Math.round(s.y), 26, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+    return;
+  }
   ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(f.a);
   ctx.lineWidth = 2; ctx.strokeStyle = f.leader ? '#ffffff' : col;
   if (f.type === 'P'){ // boomerang
@@ -805,21 +1066,35 @@ function drawShip(f){
   ctx.restore();
 }
 
+// pixel style: hand the 1x world buffer up to the screen canvas, unsmoothed, then go back to drawing at full resolution
+function present(pix){
+  ctx = mctx;
+  if (!pix) return;
+  ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(wcv, 0, 0, cv.width, cv.height);
+  ctx.imageSmoothingEnabled = true; ctx.setTransform(DPR,0,0,DPR,0,0);
+}
 function render(){
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.fillStyle = C.space; ctx.fillRect(0,0,W,H);
+  const pix = pixOn();
+  if (pix){
+    if (wcv.width !== W || wcv.height !== H){ wcv.width = W; wcv.height = H; }
+    ctx = wctx; ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  } else { ctx = mctx; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  ctx.fillStyle = pix ? PIX_BG : C.space; ctx.fillRect(0,0,W,H);
   shx = g && g.shake ? rnd(-1,1)*g.shake : 0; shy = g && g.shake ? rnd(-1,1)*g.shake : 0;
+  if (pix){ shx = Math.round(shx); shy = Math.round(shy); }
   const cam = camPos();
-  for (const L of layers){
+  for (const L of (pix ? ART.layers : layers)){
     const ox = (((-cam.x*L.f + shx*L.f) % TILE) + TILE) % TILE - TILE;
     const oy = (((-cam.y*L.f + shy*L.f) % TILE) + TILE) % TILE - TILE;
-    for (let x = ox; x < W; x += TILE) for (let y = oy; y < H; y += TILE) ctx.drawImage(L.c, x, y);
+    for (let x = ox; x < W; x += TILE) for (let y = oy; y < H; y += TILE) ctx.drawImage(L.c, pix ? Math.round(x) : x, pix ? Math.round(y) : y);
   }
-  if (!g) return;
+  if (!g){ present(pix); return; }
 
   for (const r of g.rocks){
     const s = toS(r.x, r.y); if (!onScreen(s, 40)) continue;
-    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(r.a);
+    if (pix && !r.mine){ spr(ART.rocksL, (r.r >= 26 ? 0 : r.r >= 21 ? 1 : r.r >= 17 ? 2 : 3)*64, 0, 64, 64, s.x, s.y, r.a); continue; }
+    ctx.save(); ctx.translate(pix ? Math.round(s.x) : s.x, pix ? Math.round(s.y) : s.y); ctx.rotate(pix ? snapA(r.a) : r.a);
     if (r.mine){
       const blink = Math.sin(time*6 + r.ph) > 0.3;
       ctx.strokeStyle = C.mine; ctx.lineWidth = 2;
@@ -839,10 +1114,11 @@ function render(){
     ctx.save(); ctx.translate(s.x, s.y);
     const pts = []; for (let k=0;k<6;k++){ const a = st.rot + k*Math.PI/3; pts.push([Math.cos(a)*46, Math.sin(a)*46]); }
     ctx.beginPath(); pts.forEach((q,i) => i ? ctx.lineTo(q[0],q[1]) : ctx.moveTo(q[0],q[1])); ctx.closePath();
-    ctx.fillStyle = 'rgba(255,93,143,0.07)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,93,143,0.25)'; ctx.lineWidth = 9; ctx.stroke();
-    ctx.strokeStyle = C.rose; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath(); pts.forEach(q => { ctx.moveTo(q[0]*0.45, q[1]*0.45); ctx.lineTo(q[0]*0.75, q[1]*0.75); }); ctx.strokeStyle = 'rgba(255,93,143,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // pixel style re-tints the station in the pack's steel blues so it sits with the sprites
+    ctx.fillStyle = pix ? 'rgba(30,60,110,0.35)' : 'rgba(255,93,143,0.07)'; ctx.fill();
+    ctx.strokeStyle = pix ? '#14284a' : 'rgba(255,93,143,0.25)'; ctx.lineWidth = 9; ctx.stroke();
+    ctx.strokeStyle = pix ? '#6f93c8' : C.rose; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); pts.forEach(q => { ctx.moveTo(q[0]*0.45, q[1]*0.45); ctx.lineTo(q[0]*0.75, q[1]*0.75); }); ctx.strokeStyle = pix ? '#3d5f92' : 'rgba(255,93,143,0.5)'; ctx.lineWidth = pix ? 2 : 1.5; ctx.stroke();
     const pulse = 0.5 + 0.5*Math.sin(time*4 + st.ph);
     const glow = ctx.createRadialGradient(0,0,4,0,0,34); glow.addColorStop(0, `rgba(255,200,97,${0.25+0.25*pulse})`); glow.addColorStop(1,'rgba(255,200,97,0)');
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0,0,34,0,TAU); ctx.fill();
@@ -851,7 +1127,13 @@ function render(){
     ctx.fillStyle = C.amber; ctx.globalAlpha = 0.5 + 0.5*pulse; ctx.beginPath(); ctx.arc(0,0,4 + st.core.hp,0,TAU); ctx.fill(); ctx.globalAlpha = 1;
     st.pods.forEach((q,k) => {
       const [px,py] = pts[k];
-      if (!q.alive){ ctx.fillStyle = '#140a18'; ctx.strokeStyle = 'rgba(255,93,143,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(px,py,7,0,TAU); ctx.fill(); ctx.stroke(); return; }
+      if (!q.alive){ ctx.fillStyle = pix ? '#0a1424' : '#140a18'; ctx.strokeStyle = pix ? '#2b4470' : 'rgba(255,93,143,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(px,py,7,0,TAU); ctx.fill(); ctx.stroke(); return; }
+      if (pix){
+        ctx.drawImage(ART.turret, 25, 26, 12, 12, Math.round(px) - 12, Math.round(py) - 12, 24, 24);
+        if (q.flash > 0){ ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px,py,11,0,TAU); ctx.fill(); }
+        else if (q.hp <= 1){ ctx.fillStyle = C.mine; ctx.fillRect(Math.round(px) - 2, Math.round(py) - 2, 4, 4); }
+        return;
+      }
       ctx.fillStyle = q.flash > 0 ? '#ffffff' : '#2a1030'; ctx.strokeStyle = C.rose; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(px,py,14,0,TAU); ctx.fill(); ctx.stroke();
       ctx.fillStyle = q.hp > 1 ? C.rose : C.amber; ctx.beginPath(); ctx.arc(px,py,4.5,0,TAU); ctx.fill();
@@ -861,12 +1143,17 @@ function render(){
 
   ctx.globalCompositeOperation = 'lighter';
   ctx.strokeStyle = C.amber; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  ctx.beginPath();
-  for (const b of g.bullets){ const s = toS(b.x,b.y); if (!onScreen(s,20)) continue; const sp = Math.hypot(b.vx,b.vy); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - b.vx/sp*12, s.y - b.vy/sp*12); }
-  ctx.stroke();
+  if (pix){
+    for (const b of g.bullets){ const s = toS(b.x,b.y); if (onScreen(s,20)) spr(ART.bolt, 16, 0, 16, 16, s.x, s.y, Math.atan2(b.vy, b.vx)); }
+  } else {
+    ctx.beginPath();
+    for (const b of g.bullets){ const s = toS(b.x,b.y); if (!onScreen(s,20)) continue; const sp = Math.hypot(b.vx,b.vy); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - b.vx/sp*12, s.y - b.vy/sp*12); }
+    ctx.stroke();
+  }
   for (const q of g.parts){
     const s = toS(q.x,q.y); if (!onScreen(s,10)) continue;
-    ctx.globalAlpha = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.col; ctx.fillRect(s.x - q.s/2, s.y - q.s/2, q.s, q.s);
+    ctx.globalAlpha = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.col;
+    if (pix) ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2); else ctx.fillRect(s.x - q.s/2, s.y - q.s/2, q.s, q.s);
   }
   ctx.globalAlpha = 1;
   for (const q of g.rings){
@@ -876,9 +1163,15 @@ function render(){
   }
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
+  if (pix) for (const q of g.anims){
+    if (q.t < 0) continue;
+    const s = toS(q.x,q.y); if (!onScreen(s, 50*q.sc)) continue;
+    spr(ART.expl, Math.min(7, Math.floor(q.t / 0.07))*32, 0, 32, 32, s.x, s.y, 0, q.sc);
+  }
 
   for (const m of g.miss){
     const s = toS(m.x,m.y); if (!onScreen(s,20)) continue;
+    if (pix){ spr(ART.missile, 64, 0, 64, 64, s.x, s.y, m.a); continue; }
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(m.a);
     ctx.fillStyle = C.rose; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(0,-4); ctx.lineTo(-6,0); ctx.lineTo(0,4); ctx.closePath(); ctx.fill();
     ctx.restore();
@@ -887,7 +1180,12 @@ function render(){
 
   if (g.spy){
     const sp = g.spy, s = toS(sp.x,sp.y);
-    if (onScreen(s,40)){
+    if (pix && onScreen(s,40)){
+      const gl = ctx.createRadialGradient(s.x,s.y,2,s.x,s.y,24); gl.addColorStop(0,'rgba(255,240,74,0.45)'); gl.addColorStop(1,'rgba(255,240,74,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(s.x,s.y,24,0,TAU); ctx.fill();
+      shipSpr('spy', s.x, s.y, sp.a);
+      if (Math.sin(time*14) > 0){ ctx.fillStyle = C.spy; ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 1, 3, 3); }
+    } else if (onScreen(s,40)){
       ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(sp.a);
       ctx.globalCompositeOperation = 'lighter';
       const gl = ctx.createRadialGradient(0,0,2,0,0,26); gl.addColorStop(0,'rgba(255,240,74,0.35)'); gl.addColorStop(1,'rgba(255,240,74,0)');
@@ -904,6 +1202,11 @@ function render(){
   const p = g.p;
   if (p.alive && !(p.inv > 0 && Math.floor(p.inv*12) % 2)){
     const s = toS(p.x,p.y);
+    if (pix){
+      const back = 23 + Math.round((p.v - 190) * 0.02);
+      spr(ART.thrust, (Math.floor(time*24) % 4)*16, 0, 16, 16, s.x - Math.cos(p.a)*back, s.y - Math.sin(p.a)*back, p.a, 1, true);
+      shipSpr('player', s.x, s.y, p.a);
+    } else {
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(p.a);
     ctx.globalCompositeOperation = 'lighter';
     const fl = 10 + Math.random()*8 + (p.v-190)*0.06;
@@ -913,6 +1216,7 @@ function render(){
     ctx.beginPath(); ctx.moveTo(17,0); ctx.lineTo(-9,-11); ctx.lineTo(-5,0); ctx.lineTo(-9,11); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#3b2600'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(0,-3); ctx.lineTo(0,3); ctx.closePath(); ctx.fill();
     ctx.restore();
+    }
   }
 
   // condition red: the screen edge throbs
@@ -923,6 +1227,7 @@ function render(){
     ctx.fillStyle = gr; ctx.fillRect(0,0,W,H);
   }
 
+  present(pix);
   drawPops();
   drawStick();
   drawHUD();
@@ -1056,8 +1361,10 @@ function drawHUD(){
 let last = performance.now();
 function frame(t){
   const dt = Math.min(0.033, (t - last) / 1000); last = t;
-  if (g && !paused && !g.over) update(dt);
-  else if (!g){ time += dt; demoCam.x = wrap(demoCam.x + 40*dt); demoCam.y = wrap(demoCam.y + 18*dt); }
+  if (g && !paused && !g.over){ update(dt); if (!M.running) musicStart(); }
+  else if (M.running) musicStop();
+  musicTick();
+  if (!g){ time += dt; demoCam.x = wrap(demoCam.x + 40*dt); demoCam.y = wrap(demoCam.y + 18*dt); }
   render();
   requestAnimationFrame(frame);
 }
@@ -1089,11 +1396,15 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 
 window.addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
+  // let a focused menu button take its own Space/Enter press
+  if (e.target && e.target.tagName === 'BUTTON' && !overlay.hidden && (e.key === ' ' || e.key === 'Enter')) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   if (k === 'p' && g && !g.over){ setPaused(!paused); return; }
+  if (k === 'v'){ setStyle(style === 'pixel' ? 'vector' : 'pixel'); return; }
+  if (k === 'Escape' && !cards.settings.hidden){ closeSettings(); return; }
   if ((k === 'Enter' || k === ' ') && !overlay.hidden){
-    if (!cards.title.hidden) start(); else if (!cards.pause.hidden) setPaused(false);
+    if (!cards.title.hidden) start(); else if (!cards.pause.hidden) setPaused(false); else if (!cards.settings.hidden) closeSettings();
     return;
   }
   keys.add(k); initAudio();
@@ -1114,8 +1425,31 @@ $('btnStart').addEventListener('click', start);
 $('btnAgain').addEventListener('click', start);
 $('btnResume').addEventListener('click', () => setPaused(false));
 $('btnPause').addEventListener('click', () => { if (g && !g.over) setPaused(!paused); });
-function syncSound(){ $('btnSound').textContent = muted ? 'Sound off' : 'Sound on'; $('btnSound').setAttribute('aria-pressed', String(!muted)); }
-$('btnSound').addEventListener('click', () => { muted = !muted; save('sp-mute', muted ? '1' : '0'); syncSound(); initAudio(); if (muted && voiceOK) try { speechSynthesis.cancel(); } catch(e){} });
+function syncSound(){
+  $('btnSound').textContent = muted ? 'Sound off' : 'Sound on'; $('btnSound').setAttribute('aria-pressed', String(!muted));
+  document.querySelectorAll('[data-style]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.style === style)));
+  document.querySelectorAll('[data-music]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.music === '1') === musicOn)));
+  document.querySelectorAll('[data-sound]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.sound === '1') === !muted)));
+}
+function setMuted(v){ muted = v; save('sp-mute', muted ? '1' : '0'); syncSound(); initAudio(); if (muted && voiceOK) try { speechSynthesis.cancel(); } catch(e){} }
+function setStyle(v){ style = v; save('sp-style', v); if (v === 'pixel') loadArt(); syncSound(); }
+$('btnSound').addEventListener('click', () => setMuted(!muted));
+document.querySelectorAll('[data-style]').forEach(b => b.addEventListener('click', () => setStyle(b.dataset.style)));
+document.querySelectorAll('[data-music]').forEach(b => b.addEventListener('click', () => { musicOn = b.dataset.music === '1'; save('sp-music', musicOn ? '1' : '0'); syncSound(); initAudio(); }));
+document.querySelectorAll('[data-sound]').forEach(b => b.addEventListener('click', () => setMuted(b.dataset.sound !== '1')));
+// settings open over whatever was showing and return to it; in a game that means pausing first
+let settingsFrom = 'title';
+function openSettings(){
+  if (g && !g.over && !paused) setPaused(true);
+  settingsFrom = Object.keys(cards).find(k => !cards[k].hidden && k !== 'settings') || (g && !g.over ? 'pause' : 'title');
+  showCard('settings');
+}
+function closeSettings(){ showCard(settingsFrom); }
+$('btnSettings').addEventListener('click', openSettings);
+$('btnTitleSettings').addEventListener('click', openSettings);
+$('btnPauseSettings').addEventListener('click', openSettings);
+$('btnSettingsBack').addEventListener('click', closeSettings);
+if (style === 'pixel') loadArt();
 syncSound();
 
 // ---------- leaderboard ----------
@@ -1243,7 +1577,7 @@ $('btnCopyLink').addEventListener('click', async () => {
 
 if (document.fonts && document.fonts.load) document.fonts.load(`700 28px "Chakra Petch"`).catch(()=>{});
 showCard('title');
-window.__sp = { get g(){ return g; }, launchSquad, spawnSpy, setCond, endGame, start, update, killFighter };
+window.__sp = { get g(){ return g; }, get M(){ return M; }, get ART(){ return ART; }, launchSquad, spawnSpy, setCond, endGame, start, update, killFighter, killRock, destroyStation, setStyle };
 })();
 </script>
 </body>

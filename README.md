@@ -8,7 +8,18 @@ A Bosconian-style free-roaming space shooter for the browser. Live at https://st
 - Spy ship: shoot it before it leaves (200 → 400 → 800).
 - Squadrons: five ships in a V, launched from a base ("Battle stations!"). Kill the leader and the wingmen break off and flee; kill all five for a bonus.
 - Score popups fly into a rolling score counter.
-- Keyboard: arrows / WASD to steer, P to pause.
+- Keyboard: arrows / WASD to steer, P to pause, V to switch art style.
+
+## Settings
+
+- **Art style**: Vector (the original neon lines) or Pixel, which uses the
+  [Lunar Battle Pack](https://mattwalkden.itch.io/lunar-battle-pack) by Matt Walkden (CC0, sheets in `assets/lunar/`).
+  The pixel playfield is drawn at one canvas pixel per CSS pixel and scaled up unsmoothed; ships snap to 32 facings.
+- **Music**: a 124 BPM loop over Am · F · C · G whose drums and bass build with the alert condition. Every kill is a
+  note: it waits for the next 16th, takes its pitch from the chord playing then, and a run of kills climbs the chord.
+  Kills that land together (mine chains, squadrons) spill into the next 16ths as an arpeggio; stations play a full
+  chord with a sub drop. Off gives the classic arcade effects.
+- **Sound**: master mute.
 
 ## Online leaderboard
 

@@ -116,7 +116,7 @@ h1{margin:0;font:400 clamp(40px,11vw,64px)/.95 var(--disp);color:var(--amber);te
   <div class="card" id="cardTitle">
     <div class="kicker">Sector patrol · arcade</div>
     <h1>star picket</h1>
-    <p class="lede">Press anywhere and drag to steer. Your guns fire fore and aft on their own. Clear every hex station in the sector to advance. Shoot the yellow spy ship before it gets away, or the whole sector goes to Condition Red.</p>
+    <p class="lede">Press anywhere and drag to steer. Your guns fire fore and aft on their own. Clear every station in the sector to advance: shoot out all its cannon pods, or hit the core. Shoot the yellow spy ship before it gets away, or the whole sector goes to Condition Red.</p>
     <div class="table">
       <span>Station core</span><b class="gold">1500</b>
       <span>Cannon pod</span><b>200</b>
@@ -590,12 +590,15 @@ function nextRound(){
   g.stations = []; g.rocks = []; g.fighters = []; g.miss = []; g.squads = []; g.spy = null;
   g.cond = 0; g.condMin = 0; g.roundT = 0; g.spyT = rnd(14, 22); g.squadT = rnd(9, 14); g.spawnT = 4;
   const p = g.p, n = Math.min(3 + g.round, 10);
-  let tries = 0;
+  let tries = 0, deck = [];
   while (g.stations.length < n && tries++ < 2000){
     const x = rnd(0,WS), y = rnd(0,WS);
     if (dist(x,y,p.x,p.y) < 650 || !farFrom(g.stations,x,y,720)) continue;
-    const pods = []; for (let k=0;k<6;k++) pods.push({ hp:2, alive:true, flash:0 });
-    g.stations.push({ x, y, rot: rnd(0,TAU), pods, core:{ hp:3, flash:0 }, alive:true, fireT:rnd(1,3), ph:rnd(0,TAU), alerted:0 });
+    // deal designs from a shuffled deck so a sector always mixes them
+    if (!deck.length) deck = stationPool(g.round).sort(() => Math.random() - 0.5);
+    const kind = deck.pop(), K = STATION_KINDS[kind];
+    const pods = K.pods.map(() => ({ hp:2, alive:true, flash:0 }));
+    g.stations.push({ x, y, kind, R:K.R, rot: rnd(0,TAU), pods, core:{ hp:K.core, flash:0 }, alive:true, fireT:rnd(1,3), ph:rnd(0,TAU), alerted:0 });
   }
   const avoid = g.stations.concat([{x:p.x,y:p.y}]);
   tries = 0;
@@ -614,7 +617,27 @@ function nextRound(){
 }
 
 function banner(text, sub, t){ g.banner = { text, sub: sub || '', t: t || 2 }; }
-function podPos(s,k){ const a = s.rot + k * Math.PI/3; return { x: s.x + Math.cos(a)*46, y: s.y + Math.sin(a)*46 }; }
+// Station designs. Pods are listed in order round the hull, which is drawn as the polygon through them.
+const polar = (a, r) => [Math.cos(a)*r, Math.sin(a)*r];
+const ringOf = (n, r, a0) => Array.from({ length:n }, (_, k) => polar(a0 + k*TAU/n, r));
+const STATION_KINDS = {
+  hex:     { pods: ringOf(6, 46, 0), core:3, sides:6, fire:1, volley:1, deco:'spokes' },
+  // long hull, a cannon at each tip
+  lance:   { pods: [[-64,0],[-32,-28],[32,-28],[64,0],[32,28],[-32,28]], core:3, sides:6, fire:1, volley:1, deco:'spine' },
+  // three arms, each ending in a fork of two pods
+  trident: { pods: [-Math.PI/2, Math.PI/6, Math.PI*5/6].flatMap(a => [polar(a - 0.32, 60), polar(a + 0.32, 60)]), core:3, sides:3, fire:1, volley:1, deco:'arms' },
+  // small and quick to kill, but it fires faster
+  diamond: { pods: [[56,0],[0,-37],[-56,0],[0,37]], core:2, sides:4, fire:0.7, volley:1, deco:'cross' },
+  // the big one: eight pods, a tougher core, and it fires in pairs
+  crown:   { pods: ringOf(8, 60, TAU/16), core:4, sides:8, fire:1.15, volley:2, deco:'ring' },
+};
+for (const k in STATION_KINDS){ const K = STATION_KINDS[k]; K.R = Math.max(...K.pods.map(q => Math.hypot(q[0], q[1]))) + 18; }
+function stationPool(round){
+  return round <= 1 ? ['hex','hex','diamond','lance'] : round === 2 ? ['hex','diamond','lance','trident']
+       : round <= 4 ? ['hex','diamond','lance','trident','trident','crown'] : ['hex','diamond','lance','trident','crown','crown'];
+}
+function podLocal(s,k){ const q = STATION_KINDS[s.kind].pods[k], c = Math.cos(s.rot), n = Math.sin(s.rot); return [q[0]*c - q[1]*n, q[0]*n + q[1]*c]; }
+function podPos(s,k){ const q = podLocal(s,k); return { x: s.x + q[0], y: s.y + q[1] }; }
 
 // ---------- conditions ----------
 const COND = ['GREEN','YELLOW','RED'];
@@ -913,8 +936,8 @@ function update(dtReal){
     b.x = wrap(b.x + b.vx*dt); b.y = wrap(b.y + b.vy*dt); b.life -= dt;
     if (b.life <= 0){ b.dead = true; continue; }
     for (const s of g.stations){
-      if (!s.alive || dist(b.x,b.y,s.x,s.y) > 80) continue;
-      for (let i=0;i<6 && !b.dead;i++){
+      if (!s.alive || dist(b.x,b.y,s.x,s.y) > s.R) continue;
+      for (let i=0;i<s.pods.length && !b.dead;i++){
         if (!s.pods[i].alive) continue;
         const pp = podPos(s,i);
         if (dist(b.x,b.y,pp.x,pp.y) < 16){ b.dead = true; hitPod(s,i,b.x,b.y); }
@@ -941,17 +964,20 @@ function update(dtReal){
         s.alerted = Math.max(s.alerted, 2);
         s.fireT -= dt;
         if (s.fireT <= 0){
-          s.fireT = Math.max(0.7, 1.7 - g.round*0.08) + rnd(0,0.8);
-          let bi = -1, bd = 1e9;
-          s.pods.forEach((q,i) => { if (!q.alive) return; const pp = podPos(s,i); const dd = dist(pp.x,pp.y,p.x,p.y); if (dd < bd){ bd = dd; bi = i; } });
-          if (bi >= 0){
+          const K = STATION_KINDS[s.kind];
+          s.fireT = (Math.max(0.7, 1.7 - g.round*0.08) + rnd(0,0.8)) * K.fire;
+          // the pods nearest you fire; most designs launch one missile, the crown a pair
+          const order = s.pods.map((q,i) => i).filter(i => s.pods[i].alive)
+            .sort((a,b) => { const pa = podPos(s,a), pb = podPos(s,b); return dist(pa.x,pa.y,p.x,p.y) - dist(pb.x,pb.y,p.x,p.y); });
+          order.slice(0, K.volley).forEach((bi, j) => {
             const pp = podPos(s,bi), a = angTo(pp.x,pp.y,p.x,p.y);
-            g.miss.push({ x:pp.x, y:pp.y, a, life:4.5 }); sfx('missile');
-          }
+            g.miss.push({ x:pp.x, y:pp.y, a: a + (j ? rnd(-0.25, 0.25) : 0), life:4.5 });
+          });
+          if (order.length) sfx('missile');
         }
       }
-      if (p.inv <= 0 && d < 80){
-        for (let i=0;i<6;i++){ if (!s.pods[i].alive) continue; const pp = podPos(s,i); if (dist(pp.x,pp.y,p.x,p.y) < 24) killPlayer(); }
+      if (p.inv <= 0 && d < s.R){
+        for (let i=0;i<s.pods.length;i++){ if (!s.pods[i].alive) continue; const pp = podPos(s,i); if (dist(pp.x,pp.y,p.x,p.y) < 24) killPlayer(); }
         if (d < 28) killPlayer();
       }
     }
@@ -1141,20 +1167,31 @@ function render(){
 
   for (const st of g.stations){
     if (!st.alive) continue;
-    const s = toS(st.x, st.y); if (!onScreen(s, 90)) continue;
+    const s = toS(st.x, st.y); if (!onScreen(s, st.R + 10)) continue;
+    const K = STATION_KINDS[st.kind];
     ctx.save(); ctx.translate(s.x, s.y);
-    const pts = []; for (let k=0;k<6;k++){ const a = st.rot + k*Math.PI/3; pts.push([Math.cos(a)*46, Math.sin(a)*46]); }
+    const pts = st.pods.map((q,k) => podLocal(st,k));
     ctx.beginPath(); pts.forEach((q,i) => i ? ctx.lineTo(q[0],q[1]) : ctx.moveTo(q[0],q[1])); ctx.closePath();
     // pixel style re-tints the station in the pack's steel blues so it sits with the sprites
     ctx.fillStyle = pix ? 'rgba(30,60,110,0.35)' : 'rgba(255,93,143,0.07)'; ctx.fill();
     ctx.strokeStyle = pix ? '#14284a' : 'rgba(255,93,143,0.25)'; ctx.lineWidth = 9; ctx.stroke();
     ctx.strokeStyle = pix ? '#6f93c8' : C.rose; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath(); pts.forEach(q => { ctx.moveTo(q[0]*0.45, q[1]*0.45); ctx.lineTo(q[0]*0.75, q[1]*0.75); }); ctx.strokeStyle = pix ? '#3d5f92' : 'rgba(255,93,143,0.5)'; ctx.lineWidth = pix ? 2 : 1.5; ctx.stroke();
+    // inner structure, different for each design
+    ctx.beginPath();
+    const seg = (q, a, b) => { ctx.moveTo(q[0]*a, q[1]*a); ctx.lineTo(q[0]*b, q[1]*b); };
+    if (K.deco === 'spokes') pts.forEach(q => seg(q, 0.45, 0.75));
+    else if (K.deco === 'cross') pts.forEach(q => seg(q, 0.42, 0.78));
+    else if (K.deco === 'spine'){ seg(pts[0], 0.32, 0.8); seg(pts[3], 0.32, 0.8); pts.forEach((q,i) => { if (i % 3) seg(q, 0.62, 0.85); }); }
+    else if (K.deco === 'arms'){
+      for (let i=0;i<pts.length;i+=2){ const m = [(pts[i][0]+pts[i+1][0])/2, (pts[i][1]+pts[i+1][1])/2]; seg(m, 0.38, 1); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[i+1][0], pts[i+1][1]); }
+    } else if (K.deco === 'ring'){ ctx.moveTo(38, 0); ctx.arc(0, 0, 38, 0, TAU); pts.forEach((q,i) => { if (i % 2 === 0) seg(q, 0.38, 0.62); }); }
+    ctx.strokeStyle = pix ? '#3d5f92' : 'rgba(255,93,143,0.5)'; ctx.lineWidth = pix ? 2 : 1.5; ctx.stroke();
     const pulse = 0.5 + 0.5*Math.sin(time*4 + st.ph);
     const glow = ctx.createRadialGradient(0,0,4,0,0,34); glow.addColorStop(0, `rgba(255,200,97,${0.25+0.25*pulse})`); glow.addColorStop(1,'rgba(255,200,97,0)');
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0,0,34,0,TAU); ctx.fill();
     ctx.fillStyle = st.core.flash > 0 ? '#ffffff' : '#2b0f22'; ctx.strokeStyle = C.amber; ctx.lineWidth = 2.5;
-    ctx.beginPath(); for (let k=0;k<6;k++){ const a = st.rot + Math.PI/6 + k*Math.PI/3; ctx.lineTo(Math.cos(a)*19, Math.sin(a)*19); } ctx.closePath(); ctx.fill(); ctx.stroke();
+    const cr = K.sides === 3 ? 24 : K.sides === 4 ? 21 : 19, ca = st.rot + (K.sides === 6 ? Math.PI/6 : K.sides === 3 ? Math.PI/2 : K.sides === 4 ? Math.PI/4 : 0);
+    ctx.beginPath(); for (let k=0;k<K.sides;k++){ const a = ca + k*TAU/K.sides; ctx.lineTo(Math.cos(a)*cr, Math.sin(a)*cr); } ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = C.amber; ctx.globalAlpha = 0.5 + 0.5*pulse; ctx.beginPath(); ctx.arc(0,0,4 + st.core.hp,0,TAU); ctx.fill(); ctx.globalAlpha = 1;
     st.pods.forEach((q,k) => {
       const [px,py] = pts[k];
@@ -1608,7 +1645,7 @@ $('btnCopyLink').addEventListener('click', async () => {
 
 if (document.fonts && document.fonts.load) document.fonts.load(`700 28px "Chakra Petch"`).catch(()=>{});
 showCard('title');
-window.__sp = { get g(){ return g; }, get M(){ return M; }, get ART(){ return ART; }, launchSquad, spawnSpy, setCond, endGame, start, update, killFighter, killRock, destroyStation, setStyle };
+window.__sp = { STATION_KINDS, get g(){ return g; }, get M(){ return M; }, get ART(){ return ART; }, launchSquad, spawnSpy, setCond, endGame, start, update, killFighter, killRock, destroyStation, setStyle };
 })();
 </script>
 </body>
